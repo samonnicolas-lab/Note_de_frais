@@ -51,4 +51,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ month }),
     }),
+
+  usageMensuel: (month) =>
+    request(`/usage-mensuel${month ? `?month=${encodeURIComponent(month)}` : ""}`),
 };

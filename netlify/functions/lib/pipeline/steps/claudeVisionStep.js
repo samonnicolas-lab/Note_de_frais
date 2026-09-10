@@ -106,5 +106,12 @@ export async function claudeVisionStep({ base64Data, mimeType }) {
   if (!toolUse) {
     throw new Error("La réponse de Claude ne contient pas de résultat structuré exploitable.");
   }
-  return toolUse.input;
+  return {
+    extraction: toolUse.input,
+    usage: {
+      model,
+      inputTokens: (data.usage && data.usage.input_tokens) || 0,
+      outputTokens: (data.usage && data.usage.output_tokens) || 0,
+    },
+  };
 }

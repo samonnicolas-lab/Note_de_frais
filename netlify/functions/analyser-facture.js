@@ -1,6 +1,7 @@
 import { json, error, withErrorHandling, HttpError } from "./lib/http.js";
-import { getSession } from "./lib/session/cookies.js";
+import { requireDriveClient } from "./lib/auth/session.js";
 import { runExtractionPipeline } from "./lib/pipeline/index.js";
+import { recordUsage } from "./lib/usage/index.js";
 
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"]);
 // Limite conservatrice : les Netlify Functions synchrones plafonnent le corps de
@@ -12,10 +13,7 @@ export default async (request) => {
     if (request.method !== "POST") {
       return error(405, "Méthode non autorisée.");
     }
-    const session = getSession(request);
-    if (!session || !session.refreshToken) {
-      throw new HttpError(401, "Non authentifié : merci de vous connecter avec Google.");
-    }
+    const { drive } = requireDriveClient(request);
 
     const body = await request.json();
     const { fileBase64, mimeType } = body || {};
@@ -30,7 +28,18 @@ export default async (request) => {
       throw new HttpError(413, "Fichier trop volumineux. Merci de réessayer avec une photo compressée (< 4 Mo).");
     }
 
-    const extraction = await runExtractionPipeline({ base64Data: fileBase64, mimeType });
+    const { extraction, usage } = await runExtractionPipeline({ base64Data: fileBase64, mimeType });
+
+    if (usage) {
+      // Le compteur d'usage ne doit jamais faire échouer la réponse à l'utilisateur :
+      // s'il échoue (Drive indisponible, etc.), on log et on répond quand même.
+      try {
+        await recordUsage(drive, usage);
+      } catch (err) {
+        console.error("Échec de l'enregistrement du compteur d'usage IA :", err);
+      }
+    }
+
     return json(200, extraction);
   });
 };

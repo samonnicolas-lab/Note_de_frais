@@ -51,19 +51,6 @@ export async function ensureMonthFolder(drive, month) {
   return { rootId, monthFolderId };
 }
 
-/** Lit registre.json (le crée vide s'il n'existe pas encore). Retourne { fileId, depenses }. */
-export async function readRegistre(drive) {
-  const rootId = await ensureRootFolder(drive);
-  const existing = await findChild(drive, REGISTRE_FILENAME, rootId, "application/json");
-  if (!existing) {
-    const fileId = await writeNewJsonFile(drive, REGISTRE_FILENAME, rootId, []);
-    return { fileId, depenses: [] };
-  }
-  const res = await drive.files.get({ fileId: existing.id, alt: "media" }, { responseType: "json" });
-  const depenses = Array.isArray(res.data) ? res.data : [];
-  return { fileId: existing.id, depenses };
-}
-
 async function writeNewJsonFile(drive, name, parentId, data) {
   const res = await drive.files.create({
     requestBody: { name, parents: [parentId], mimeType: "application/json" },
@@ -73,12 +60,40 @@ async function writeNewJsonFile(drive, name, parentId, data) {
   return res.data.id;
 }
 
-/** Écrase le contenu de registre.json avec le tableau de dépenses fourni. */
-export async function writeRegistre(drive, fileId, depenses) {
+/**
+ * Lit un fichier JSON à la racine de "Notes de frais" (le crée avec `defaultValue`
+ * s'il n'existe pas encore). Retourne { fileId, data }. Utilisé par le registre des
+ * dépenses et par le compteur d'usage IA — tout module qui a besoin d'un petit
+ * fichier JSON persistant sur le Drive de l'utilisateur passe par ici.
+ */
+export async function readJsonFile(drive, filename, defaultValue) {
+  const rootId = await ensureRootFolder(drive);
+  const existing = await findChild(drive, filename, rootId, "application/json");
+  if (!existing) {
+    const fileId = await writeNewJsonFile(drive, filename, rootId, defaultValue);
+    return { fileId, data: defaultValue };
+  }
+  const res = await drive.files.get({ fileId: existing.id, alt: "media" }, { responseType: "json" });
+  return { fileId: existing.id, data: res.data ?? defaultValue };
+}
+
+/** Écrase le contenu d'un fichier JSON existant (obtenu via readJsonFile). */
+export async function writeJsonFile(drive, fileId, data) {
   await drive.files.update({
     fileId,
-    media: { mimeType: "application/json", body: JSON.stringify(depenses, null, 2) },
+    media: { mimeType: "application/json", body: JSON.stringify(data, null, 2) },
   });
+}
+
+/** Lit registre.json (le crée vide s'il n'existe pas encore). Retourne { fileId, depenses }. */
+export async function readRegistre(drive) {
+  const { fileId, data } = await readJsonFile(drive, REGISTRE_FILENAME, []);
+  return { fileId, depenses: Array.isArray(data) ? data : [] };
+}
+
+/** Écrase le contenu de registre.json avec le tableau de dépenses fourni. */
+export async function writeRegistre(drive, fileId, depenses) {
+  await writeJsonFile(drive, fileId, depenses);
 }
 
 /** Upload d'un fichier binaire (justificatif ou export Excel) dans un dossier donné. */

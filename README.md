@@ -20,6 +20,13 @@ code est structuré pour les accueillir :
 - Le modèle de données d'une dépense inclut un champ `statut` prévu pour la
   Phase 4 (modification a posteriori), même si aucune UI ne l'exploite encore.
 
+Un compteur d'usage de l'API Claude est également suivi : chaque appel à
+`analyser-facture` enregistre les tokens consommés dans
+`Notes de frais/usage.json` sur le Drive de l'utilisateur (agrégé par mois :
+nombre de factures analysées, tokens, coût estimé en USD — la devise réelle de
+facturation Anthropic). Ce compteur est affiché dans l'écran Réglages
+(`netlify/functions/lib/usage/`, fonction `usage-mensuel`).
+
 ## Stack
 
 - Frontend : React + Vite, PWA (`vite-plugin-pwa`)

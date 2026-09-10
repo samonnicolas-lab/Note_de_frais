@@ -4,8 +4,10 @@
 // (reconnaissance par "signature fournisseur") avant de retomber sur Claude.
 import { claudeVisionStep } from "./steps/claudeVisionStep.js";
 
-// Ordre d'exécution : chaque étape peut renvoyer un résultat structuré (auquel
-// cas le pipeline s'arrête là) ou `null` pour laisser la main à l'étape suivante.
+// Ordre d'exécution : chaque étape peut renvoyer `{ extraction, usage }` (auquel
+// cas le pipeline s'arrête là — `usage` vaut `null` pour une étape qui ne fait pas
+// d'appel facturé, ex. une future reconnaissance par signature fournisseur en
+// Phase 3) ou `null`/`undefined` pour laisser la main à l'étape suivante.
 const PIPELINE_STEPS = [claudeVisionStep];
 
 export async function runExtractionPipeline(input) {

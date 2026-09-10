@@ -250,6 +250,27 @@ a {
   margin-bottom: 16px;
 }
 
+.usage-stats {
+  display: flex;
+  gap: 12px;
+  margin: 8px 0 4px;
+}
+
+.usage-stat {
+  flex: 1;
+  background: var(--surface-2);
+  border-radius: 10px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.usage-stat strong {
+  font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
+}
+
 /* Month switcher */
 .month-switcher {
   display: flex;

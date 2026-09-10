@@ -26,6 +26,18 @@ export function formatAmount(value) {
   return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
 }
 
+// Anthropic facture en dollars : on affiche le coût estimé dans sa devise de
+// facturation réelle plutôt que de convertir avec un taux de change fictif.
+export function formatUSD(value) {
+  const n = Number(value) || 0;
+  return n.toLocaleString("fr-FR", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: n < 1 ? 4 : 2,
+    maximumFractionDigits: n < 1 ? 4 : 2,
+  });
+}
+
 export function formatDateFr(dateStr) {
   if (!dateStr) return "";
   const [y, m, d] = dateStr.split("-");
