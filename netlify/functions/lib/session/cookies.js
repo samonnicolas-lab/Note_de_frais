@@ -1,4 +1,7 @@
-import { parse, serialize } from "cookie";
+// cookie@2.x a renommé son API : parse -> parseCookie, serialize -> stringifySetCookie
+// (qui prend désormais un objet unique { name, value, ...options } au lieu de
+// serialize(name, value, options)).
+import { parseCookie, stringifySetCookie } from "cookie";
 import { encryptSession, decryptSession } from "./crypto.js";
 import { isLocalDev } from "../http.js";
 
@@ -9,7 +12,7 @@ const SESSION_MAX_AGE = 60 * 60 * 24 * 180; // 180 jours : "pas besoin de se rec
 
 export function readCookie(request, name) {
   const header = request.headers.get("cookie") || "";
-  const all = parse(header);
+  const all = parseCookie(header);
   return all[name];
 }
 
@@ -20,7 +23,9 @@ export function getSession(request) {
 
 export function buildSessionCookie(sessionPayload) {
   const value = encryptSession(sessionPayload);
-  return serialize(SESSION_COOKIE, value, {
+  return stringifySetCookie({
+    name: SESSION_COOKIE,
+    value,
     httpOnly: true,
     secure: !isLocalDev(),
     sameSite: "lax",
@@ -30,7 +35,9 @@ export function buildSessionCookie(sessionPayload) {
 }
 
 export function buildClearSessionCookie() {
-  return serialize(SESSION_COOKIE, "", {
+  return stringifySetCookie({
+    name: SESSION_COOKIE,
+    value: "",
     httpOnly: true,
     secure: !isLocalDev(),
     sameSite: "lax",
@@ -40,7 +47,9 @@ export function buildClearSessionCookie() {
 }
 
 export function buildOAuthStateCookie(state) {
-  return serialize(OAUTH_STATE_COOKIE, state, {
+  return stringifySetCookie({
+    name: OAUTH_STATE_COOKIE,
+    value: state,
     httpOnly: true,
     secure: !isLocalDev(),
     sameSite: "lax",
@@ -50,7 +59,9 @@ export function buildOAuthStateCookie(state) {
 }
 
 export function buildClearOAuthStateCookie() {
-  return serialize(OAUTH_STATE_COOKIE, "", {
+  return stringifySetCookie({
+    name: OAUTH_STATE_COOKIE,
+    value: "",
     httpOnly: true,
     secure: !isLocalDev(),
     sameSite: "lax",
