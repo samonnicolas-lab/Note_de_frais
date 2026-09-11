@@ -12,6 +12,12 @@ export default function Reglages() {
   const [loadingUsage, setLoadingUsage] = useState(true);
   const [erreurUsage, setErreurUsage] = useState(null);
 
+  const [profil, setProfil] = useState({ nom: "", fonction: "", iban: "" });
+  const [chargementProfil, setChargementProfil] = useState(true);
+  const [enregistrementProfil, setEnregistrementProfil] = useState(false);
+  const [profilEnregistre, setProfilEnregistre] = useState(false);
+  const [erreurProfil, setErreurProfil] = useState(null);
+
   useEffect(() => {
     let annule = false;
     api
@@ -22,9 +28,35 @@ export default function Reglages() {
     return () => { annule = true; };
   }, []);
 
+  useEffect(() => {
+    let annule = false;
+    api
+      .obtenirProfil()
+      .then((data) => { if (!annule) setProfil(data.profil); })
+      .catch((err) => { if (!annule) setErreurProfil(err.message); })
+      .finally(() => { if (!annule) setChargementProfil(false); });
+    return () => { annule = true; };
+  }, []);
+
   const onLogout = async () => {
     await logout();
     navigate("/connexion", { replace: true });
+  };
+
+  const onEnregistrerProfil = async (event) => {
+    event.preventDefault();
+    setEnregistrementProfil(true);
+    setErreurProfil(null);
+    setProfilEnregistre(false);
+    try {
+      const data = await api.enregistrerProfil(profil);
+      setProfil(data.profil);
+      setProfilEnregistre(true);
+    } catch (err) {
+      setErreurProfil(err.message || "L'enregistrement a échoué.");
+    } finally {
+      setEnregistrementProfil(false);
+    }
   };
 
   return (
@@ -58,6 +90,54 @@ export default function Reglages() {
           Estimation indicative basée sur les tokens envoyés à l'API Claude. La facturation réelle
           reste disponible sur votre console Anthropic.
         </p>
+      </div>
+
+      <div className="settings-card">
+        <span className="text-muted">Informations personnelles</span>
+        <p className="text-small text-muted">
+          Utilisées pour renseigner automatiquement l'en-tête de vos exports (nom, fonction, IBAN),
+          si votre modèle Excel les prévoit.
+        </p>
+        {chargementProfil ? (
+          <Spinner label="Chargement..." />
+        ) : (
+          <form className="form" onSubmit={onEnregistrerProfil}>
+            <label className="field">
+              <span>Nom complet</span>
+              <input
+                type="text"
+                className="field-input"
+                value={profil.nom}
+                onChange={(e) => setProfil((p) => ({ ...p, nom: e.target.value }))}
+              />
+            </label>
+            <label className="field">
+              <span>Fonction</span>
+              <input
+                type="text"
+                className="field-input"
+                value={profil.fonction}
+                onChange={(e) => setProfil((p) => ({ ...p, fonction: e.target.value }))}
+              />
+            </label>
+            <label className="field">
+              <span>N° IBAN</span>
+              <input
+                type="text"
+                className="field-input"
+                value={profil.iban}
+                onChange={(e) => setProfil((p) => ({ ...p, iban: e.target.value }))}
+              />
+            </label>
+
+            {erreurProfil && <div className="alert alert-error">{erreurProfil}</div>}
+            {profilEnregistre && <div className="alert alert-success">Enregistré ✓</div>}
+
+            <button type="submit" className="btn btn-secondary btn-block" disabled={enregistrementProfil}>
+              {enregistrementProfil ? <Spinner label="Enregistrement..." /> : "Enregistrer"}
+            </button>
+          </form>
+        )}
       </div>
 
       <button type="button" className="btn btn-secondary btn-block" onClick={() => navigate("/modele-excel")}>

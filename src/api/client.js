@@ -90,4 +90,12 @@ export const api = {
 
   supprimerModeleExcel: () =>
     request("/supprimer-modele-excel", { method: "POST" }),
+
+  obtenirProfil: () => request("/obtenir-profil"),
+
+  enregistrerProfil: (profil) =>
+    request("/enregistrer-profil", {
+      method: "POST",
+      body: JSON.stringify(profil),
+    }),
 };

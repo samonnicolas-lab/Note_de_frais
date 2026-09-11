@@ -20,8 +20,12 @@ export async function getModeleConfig(drive) {
   return found ? found.data : null;
 }
 
-/** Enregistre (ou remplace) le modèle Excel et son mapping de colonnes validé par l'utilisateur. */
-export async function saveModele(drive, { buffer, fileName, ligneEntete, mapping }) {
+/**
+ * Enregistre (ou remplace) le modèle Excel et sa configuration validée par l'utilisateur :
+ * `mapping` (champ -> colonne, répété à chaque ligne de dépense) et `cellules`
+ * (champ d'en-tête -> référence de cellule unique, ex. { nom: "B2" }).
+ */
+export async function saveModele(drive, { buffer, fileName, ligneEntete, mapping, cellules }) {
   const templateFileId = await uploadOrReplaceFileInRoot(drive, {
     filename: MODELE_TEMPLATE_FILENAME,
     mimeType: XLSX_MIME,
@@ -32,6 +36,7 @@ export async function saveModele(drive, { buffer, fileName, ligneEntete, mapping
     fileName,
     ligneEntete,
     mapping,
+    cellules: cellules || {},
     enregistre_le: new Date().toISOString(),
   };
   const { fileId } = await readJsonFile(drive, MODELE_MAPPING_FILENAME, config);

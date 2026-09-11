@@ -4,18 +4,29 @@
 import { generateFixedColumnsWorkbook } from "./fixedColumnsExporter.js";
 import { generateFromTemplate } from "./customTemplateExporter.js";
 import { getModeleConfig, downloadModeleTemplate } from "../modele/index.js";
+import { getProfil } from "../profil/index.js";
 
 export async function generateMonthlyExport(drive, depenses, month) {
   const config = await getModeleConfig(drive);
 
-  const workbook = config
-    ? await generateFromTemplate(
-        await downloadModeleTemplate(drive, config.templateFileId),
-        config.mapping,
-        config.ligneEntete,
-        depenses
-      )
-    : await generateFixedColumnsWorkbook(depenses, month);
+  let workbook;
+  if (config) {
+    const [templateBuffer, profil] = await Promise.all([
+      downloadModeleTemplate(drive, config.templateFileId),
+      getProfil(drive),
+    ]);
+    workbook = await generateFromTemplate(
+      templateBuffer,
+      config.mapping,
+      config.ligneEntete,
+      depenses,
+      month,
+      config.cellules,
+      profil
+    );
+  } else {
+    workbook = await generateFixedColumnsWorkbook(depenses, month);
+  }
 
   const buffer = await workbook.xlsx.writeBuffer();
   return {

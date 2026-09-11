@@ -14,6 +14,18 @@ const CHAMPS = [
   { cle: "lien_justificatif", label: "Lien justificatif Drive" },
 ];
 
+// Informations d'en-tête : une seule cellule chacune (pas répétées par ligne).
+const CHAMPS_CELLULES = [
+  { cle: "nom", label: "Nom" },
+  { cle: "fonction", label: "Fonction" },
+  { cle: "mois", label: "Mois de référence" },
+  { cle: "iban", label: "N° IBAN" },
+  { cle: "total_tva", label: "Total TVA" },
+];
+
+const CELLULES_VIDES = { nom: "", fonction: "", mois: "", iban: "", total_tva: "" };
+const REFERENCE_CELLULE = /^[A-Za-z]{1,3}\d+$/;
+
 const MOTS_CLES = {
   date: /date/i,
   fournisseur: /fournisseur|b[ée]n[ée]ficiaire|nom|soci[ée]t[ée]|entreprise|payeur/i,
@@ -58,6 +70,7 @@ export default function ModeleExcel() {
   const [apercu, setApercu] = useState([]);
   const [ligneEntete, setLigneEntete] = useState(1);
   const [mapping, setMapping] = useState({});
+  const [cellules, setCellules] = useState(CELLULES_VIDES);
 
   const charger = async () => {
     setChargement(true);
@@ -90,6 +103,7 @@ export default function ModeleExcel() {
       setApercu(analyse.apercu);
       setLigneEntete(analyse.ligneEnteteSuggeree);
       setMapping(suggererMapping(extraireColonnes(analyse.apercu, analyse.ligneEnteteSuggeree)));
+      setCellules(CELLULES_VIDES);
       setEtape("mapping");
     } catch (err) {
       setErreur(err.message || "L'analyse du fichier a échoué.");
@@ -104,6 +118,13 @@ export default function ModeleExcel() {
   };
 
   const onEnregistrer = async () => {
+    for (const champ of CHAMPS_CELLULES) {
+      const valeur = cellules[champ.cle].trim();
+      if (valeur && !REFERENCE_CELLULE.test(valeur)) {
+        setErreur(`Référence de cellule invalide pour "${champ.label}" : ${valeur} (exemple attendu : B2).`);
+        return;
+      }
+    }
     setEnCours(true);
     setErreur(null);
     try {
@@ -112,6 +133,7 @@ export default function ModeleExcel() {
         fileName,
         ligneEntete,
         mapping,
+        cellules,
       });
       setStatut({ configure: true, config: data.config });
       setEtape("statut");
@@ -166,6 +188,12 @@ export default function ModeleExcel() {
                 Ligne d'en-tête : {statut.config.ligneEntete} — colonnes associées :{" "}
                 {CHAMPS.filter((c) => statut.config.mapping[c.cle]).map((c) => c.label).join(", ") || "aucune"}
               </span>
+              {statut.config.cellules && Object.values(statut.config.cellules).some(Boolean) && (
+                <span className="text-muted text-small">
+                  Informations d'en-tête :{" "}
+                  {CHAMPS_CELLULES.filter((c) => statut.config.cellules[c.cle]).map((c) => c.label).join(", ")}
+                </span>
+              )}
             </div>
           ) : (
             <div className="settings-card">
@@ -242,6 +270,33 @@ export default function ModeleExcel() {
                 </select>
               </label>
             ))}
+          </div>
+
+          <div className="settings-card">
+            <span className="text-muted">Informations d'en-tête (optionnel)</span>
+            <p className="text-small text-muted">
+              Indiquez la cellule de votre modèle où écrire chaque information, par exemple{" "}
+              <code>B2</code>. Laissez vide si votre modèle ne la prévoit pas.
+            </p>
+            <div className="form">
+              {CHAMPS_CELLULES.map((champ) => (
+                <label className="field" key={champ.cle}>
+                  <span>{champ.label}</span>
+                  <input
+                    type="text"
+                    className="field-input"
+                    placeholder="ex. B2"
+                    value={cellules[champ.cle]}
+                    onChange={(e) => setCellules((c) => ({ ...c, [champ.cle]: e.target.value }))}
+                  />
+                </label>
+              ))}
+            </div>
+            {(cellules.nom || cellules.fonction || cellules.iban) && (
+              <p className="text-small text-muted">
+                Nom, fonction et IBAN sont ceux renseignés dans Réglages → Informations personnelles.
+              </p>
+            )}
           </div>
 
           {erreur && <div className="alert alert-error">{erreur}</div>}
