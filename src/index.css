@@ -318,6 +318,16 @@ a {
   gap: 4px 12px;
 }
 
+.expense-item-clickable {
+  cursor: pointer;
+}
+
+.expense-item-clickable:hover,
+.expense-item-clickable:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-primary);
+}
+
 .expense-item-main {
   display: flex;
   align-items: center;
@@ -350,6 +360,11 @@ a {
   padding: 3px 8px;
   border-radius: 999px;
   white-space: nowrap;
+}
+
+.badge-locked {
+  background: color-mix(in srgb, var(--color-warning) 16%, transparent);
+  color: var(--color-warning);
 }
 
 .empty-state {
@@ -456,6 +471,13 @@ a {
   gap: 6px;
 }
 
+.doublon-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-top: 6px;
+}
+
 /* Forms */
 .form {
   display: flex;
@@ -518,16 +540,30 @@ a {
   align-items: center;
 }
 
+.justificatif-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
 .justificatif-preview {
   border-radius: var(--radius);
   overflow: hidden;
-  margin-bottom: 8px;
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   max-height: 240px;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+}
+
+.justificatif-preview:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
 
 .justificatif-preview img {

@@ -5,10 +5,13 @@
 import { v4 as uuidv4 } from "uuid";
 import { readRegistre, writeRegistre } from "../drive/driveClient.js";
 
+export const STATUT_VALIDEE = "validee";
+export const STATUT_EXPORTEE = "exportee";
+
 /**
- * Construit un objet dépense conforme au modèle de données du cahier des charges §5,
- * en incluant un champ `statut` prévu pour la Phase 4 (modification a posteriori),
- * même si aucune UI ne l'exploite encore.
+ * Construit un objet dépense conforme au modèle de données du cahier des charges §5.
+ * Le champ `statut` passe à "exportee" (verrouillée) dès que la dépense est incluse
+ * dans un export mensuel généré ; un déverrouillage manuel la ramène à "validee".
  */
 export function buildDepense({
   date,
@@ -19,6 +22,7 @@ export function buildDepense({
   tva,
   justificatif_drive_id,
   justificatif_drive_url,
+  justificatif_hash,
 }) {
   return {
     id: uuidv4(),
@@ -30,11 +34,11 @@ export function buildDepense({
     tva: tva || [],
     justificatif_drive_id: justificatif_drive_id || null,
     justificatif_drive_url: justificatif_drive_url || null,
+    justificatif_hash: justificatif_hash || null,
     cree_le: new Date().toISOString(),
+    modifie_le: null,
     statut_sync: "synchronise",
-    // Champ prévu pour la Phase 4 : permettra de rouvrir/corriger une dépense
-    // et de marquer les exports déjà générés comme "à régénérer".
-    statut: "validee",
+    statut: STATUT_VALIDEE,
   };
 }
 
@@ -55,4 +59,61 @@ export async function listAllDepenses(drive) {
 export async function listDepensesForMonth(drive, month) {
   const depenses = await listAllDepenses(drive);
   return depenses.filter((d) => typeof d.date === "string" && d.date.startsWith(month));
+}
+
+export async function getDepenseById(drive, id) {
+  const depenses = await listAllDepenses(drive);
+  return depenses.find((d) => d.id === id) || null;
+}
+
+/** Fusionne `patch` dans la dépense `id` et persiste. Retourne la dépense mise à jour. */
+export async function updateDepense(drive, id, patch) {
+  const { fileId, depenses } = await readRegistre(drive);
+  let updatedDepense = null;
+  const updated = depenses.map((d) => {
+    if (d.id !== id) return d;
+    updatedDepense = { ...d, ...patch, id: d.id };
+    return updatedDepense;
+  });
+  if (!updatedDepense) return null;
+  await writeRegistre(drive, fileId, updated);
+  return updatedDepense;
+}
+
+/** Déverrouille une dépense exportée pour permettre de la corriger a posteriori. */
+export async function unlockDepense(drive, id) {
+  return updateDepense(drive, id, { statut: STATUT_VALIDEE });
+}
+
+/** Verrouille toutes les dépenses d'un mois donné après génération de l'export. */
+export async function markMonthAsExported(drive, month) {
+  const { fileId, depenses } = await readRegistre(drive);
+  const updated = depenses.map((d) =>
+    typeof d.date === "string" && d.date.startsWith(month) ? { ...d, statut: STATUT_EXPORTEE } : d
+  );
+  await writeRegistre(drive, fileId, updated);
+}
+
+/**
+ * Recherche une dépense déjà enregistrée qui semble être un doublon du justificatif
+ * en cours de saisie : soit le fichier importé est strictement identique (empreinte),
+ * soit fournisseur + date + montant TTC correspondent déjà à une dépense existante.
+ * `excludeId` permet d'ignorer la dépense elle-même lors d'une modification.
+ */
+export async function findDuplicate(drive, { date, fournisseur, montant_ttc, justificatif_hash }, excludeId = null) {
+  const depenses = await listAllDepenses(drive);
+  const fournisseurNorm = (fournisseur || "").trim().toLowerCase();
+
+  return (
+    depenses.find((d) => {
+      if (excludeId && d.id === excludeId) return false;
+      if (justificatif_hash && d.justificatif_hash && d.justificatif_hash === justificatif_hash) {
+        return true;
+      }
+      const memeFournisseur = (d.fournisseur || "").trim().toLowerCase() === fournisseurNorm;
+      const memeDate = d.date === date;
+      const memeMontant = Math.abs(Number(d.montant_ttc) - Number(montant_ttc)) < 0.01;
+      return fournisseurNorm && memeFournisseur && memeDate && memeMontant;
+    }) || null
+  );
 }

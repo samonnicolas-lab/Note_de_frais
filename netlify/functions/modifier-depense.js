@@ -1,7 +1,7 @@
 import { json, withErrorHandling, HttpError } from "./lib/http.js";
 import { requireDriveClient } from "./lib/auth/session.js";
 import { ensureMonthFolder, uploadFile } from "./lib/drive/driveClient.js";
-import { addDepense, findDuplicate } from "./lib/registre/index.js";
+import { getDepenseById, updateDepense, STATUT_EXPORTEE } from "./lib/registre/index.js";
 import { sha256Hex } from "./lib/util/hash.js";
 
 const MAX_BASE64_LENGTH = Math.floor(6 * 1024 * 1024 * 0.95);
@@ -30,47 +30,43 @@ export default async (request) => {
     const { drive } = requireDriveClient(request);
 
     const body = await request.json();
-    const { depense, fileBase64, mimeType, fileName, forcer } = body || {};
+    const { id, depense, fileBase64, mimeType, fileName } = body || {};
 
+    if (!id) {
+      throw new HttpError(400, "Le champ 'id' est requis.");
+    }
     if (!depense || typeof depense !== "object") {
       throw new HttpError(400, "Le champ 'depense' est requis.");
     }
     validateDepenseInput(depense);
 
-    const month = monthFromDate(depense.date);
-    let buffer = null;
-    let justificatifHash = null;
+    const existing = await getDepenseById(drive, id);
+    if (!existing) {
+      throw new HttpError(404, "Dépense introuvable.");
+    }
+    if (existing.statut === STATUT_EXPORTEE) {
+      throw new HttpError(
+        409,
+        "Cette dépense a été incluse dans un export et est verrouillée. Déverrouillez-la avant de la modifier."
+      );
+    }
+
+    const patch = {
+      date: depense.date,
+      fournisseur: depense.fournisseur,
+      categorie: depense.categorie,
+      montant_ht: Number(depense.montant_ht),
+      montant_ttc: Number(depense.montant_ttc),
+      tva: Array.isArray(depense.tva) ? depense.tva : [],
+      modifie_le: new Date().toISOString(),
+    };
 
     if (fileBase64 && mimeType) {
       if (fileBase64.length > MAX_BASE64_LENGTH) {
         throw new HttpError(413, "Justificatif trop volumineux (> ~4 Mo une fois compressé).");
       }
-      buffer = Buffer.from(fileBase64, "base64");
-      justificatifHash = sha256Hex(buffer);
-    }
-
-    if (!forcer) {
-      const doublon = await findDuplicate(drive, {
-        date: depense.date,
-        fournisseur: depense.fournisseur,
-        montant_ttc: Number(depense.montant_ttc),
-        justificatif_hash: justificatifHash,
-      });
-      if (doublon) {
-        return json(409, {
-          error: "Un justificatif très similaire est déjà enregistré.",
-          doublon: {
-            id: doublon.id,
-            date: doublon.date,
-            fournisseur: doublon.fournisseur,
-            montant_ttc: doublon.montant_ttc,
-          },
-        });
-      }
-    }
-
-    let justificatif = { id: null, webViewLink: null };
-    if (buffer) {
+      const buffer = Buffer.from(fileBase64, "base64");
+      const month = monthFromDate(depense.date);
       const { monthFolderId } = await ensureMonthFolder(drive, month);
       const safeName = (fileName || `justificatif-${depense.date}`).replace(/[/\\]/g, "_");
       const uploaded = await uploadFile(drive, {
@@ -79,21 +75,13 @@ export default async (request) => {
         mimeType,
         buffer,
       });
-      justificatif = { id: uploaded.id, webViewLink: uploaded.webViewLink };
+      // L'ancien justificatif reste archivé tel quel sur Drive (non supprimé automatiquement).
+      patch.justificatif_drive_id = uploaded.id;
+      patch.justificatif_drive_url = uploaded.webViewLink;
+      patch.justificatif_hash = sha256Hex(buffer);
     }
 
-    const saved = await addDepense(drive, {
-      date: depense.date,
-      fournisseur: depense.fournisseur,
-      categorie: depense.categorie,
-      montant_ht: Number(depense.montant_ht),
-      montant_ttc: Number(depense.montant_ttc),
-      tva: Array.isArray(depense.tva) ? depense.tva : [],
-      justificatif_drive_id: justificatif.id,
-      justificatif_drive_url: justificatif.webViewLink,
-      justificatif_hash: justificatifHash,
-    });
-
-    return json(200, { depense: saved });
+    const updated = await updateDepense(drive, id, patch);
+    return json(200, { depense: updated });
   });
 };

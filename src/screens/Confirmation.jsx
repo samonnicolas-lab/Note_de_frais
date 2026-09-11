@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useScan } from "../context/ScanContext";
 import { formatAmount, formatDateFr } from "../utils/format";
@@ -6,8 +7,16 @@ export default function Confirmation() {
   const navigate = useNavigate();
   const { depenseEnregistree, reset } = useScan();
 
+  // Redirection en effet (pas pendant le rendu) : sinon un reset() du contexte
+  // juste avant un navigate() ailleurs entre en concurrence avec cette redirection
+  // et peut faire "gagner" /scanner au lieu de la destination cliquée.
+  useEffect(() => {
+    if (!depenseEnregistree) {
+      navigate("/scanner", { replace: true });
+    }
+  }, [depenseEnregistree, navigate]);
+
   if (!depenseEnregistree) {
-    navigate("/scanner", { replace: true });
     return null;
   }
 

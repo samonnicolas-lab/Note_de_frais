@@ -22,7 +22,10 @@ async function request(path, options = {}) {
 
   if (!res.ok) {
     const message = (data && data.error) || `Erreur inattendue (${res.status}).`;
-    throw new Error(message);
+    const err = new Error(message);
+    err.status = res.status;
+    err.data = data;
+    throw err;
   }
   return data;
 }
@@ -45,6 +48,20 @@ export const api = {
     }),
 
   listerDepenses: (month) => request(`/lister-depenses?month=${encodeURIComponent(month)}`),
+
+  obtenirDepense: (id) => request(`/obtenir-depense?id=${encodeURIComponent(id)}`),
+
+  modifierDepense: (id, payload) =>
+    request("/modifier-depense", {
+      method: "POST",
+      body: JSON.stringify({ id, ...payload }),
+    }),
+
+  deverrouillerDepense: (id) =>
+    request("/deverrouiller-depense", {
+      method: "POST",
+      body: JSON.stringify({ id }),
+    }),
 
   exporterMensuel: (month) =>
     request("/exporter-mensuel", {

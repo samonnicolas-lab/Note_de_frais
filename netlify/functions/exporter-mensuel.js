@@ -1,6 +1,6 @@
 import { json, withErrorHandling, HttpError } from "./lib/http.js";
 import { requireDriveClient } from "./lib/auth/session.js";
-import { listDepensesForMonth } from "./lib/registre/index.js";
+import { listDepensesForMonth, markMonthAsExported } from "./lib/registre/index.js";
 import { ensureMonthFolder, uploadFile } from "./lib/drive/driveClient.js";
 import { generateMonthlyExport } from "./lib/export/index.js";
 
@@ -25,6 +25,7 @@ export default async (request) => {
     const { buffer, filename, mimeType } = await generateMonthlyExport(depenses, month);
     const { monthFolderId } = await ensureMonthFolder(drive, month);
     const uploaded = await uploadFile(drive, { parentId: monthFolderId, name: filename, mimeType, buffer });
+    await markMonthAsExported(drive, month);
 
     return json(200, {
       fichier: { id: uploaded.id, url: uploaded.webViewLink, nom: filename },

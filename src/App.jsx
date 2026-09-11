@@ -5,6 +5,7 @@ import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Connexion from "./screens/Connexion";
 import Accueil from "./screens/Accueil";
+import DetailDepense from "./screens/DetailDepense";
 import Scanner from "./screens/Scanner";
 import AnalyseEnCours from "./screens/AnalyseEnCours";
 import Verification from "./screens/Verification";
@@ -22,6 +23,7 @@ export default function App() {
 
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="/" element={<Accueil />} />
+              <Route path="/depense/:id" element={<DetailDepense />} />
               <Route path="/scanner" element={<Scanner />} />
               <Route path="/analyse" element={<AnalyseEnCours />} />
               <Route path="/verification" element={<Verification />} />

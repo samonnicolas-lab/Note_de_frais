@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import Spinner from "../components/Spinner";
 import { currentMonth, shiftMonth, monthLabel, formatAmount, formatDateFr } from "../utils/format";
 
 export default function Accueil() {
+  const navigate = useNavigate();
   const [month, setMonth] = useState(currentMonth());
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -79,15 +80,29 @@ export default function Accueil() {
           ) : (
             <ul className="expense-list">
               {sorted.map((d) => (
-                <li key={d.id} className="expense-item">
+                <li
+                  key={d.id}
+                  className="expense-item expense-item-clickable"
+                  onClick={() => navigate(`/depense/${d.id}`)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") navigate(`/depense/${d.id}`); }}
+                >
                   <div className="expense-item-main">
                     <span className="expense-fournisseur">{d.fournisseur}</span>
                     <span className="badge">{d.categorie}</span>
+                    {d.statut === "exportee" && <span className="badge badge-locked">🔒 Exportée</span>}
                   </div>
                   <div className="expense-item-sub">
                     <span className="text-muted">{formatDateFr(d.date)}</span>
                     {d.justificatif_drive_url && (
-                      <a href={d.justificatif_drive_url} target="_blank" rel="noreferrer" className="link-small">
+                      <a
+                        href={d.justificatif_drive_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="link-small"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         Justificatif
                       </a>
                     )}
