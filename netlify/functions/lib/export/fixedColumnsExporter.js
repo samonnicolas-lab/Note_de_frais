@@ -23,6 +23,10 @@ export async function generateFixedColumnsWorkbook(depenses, month) {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "Notes de frais";
   workbook.created = new Date();
+  // Force le recalcul des formules (ligne Total) à l'ouverture, par sécurité
+  // sur les tableurs qui se fient à une valeur mise en cache plutôt que de
+  // recalculer une formule qui n'en a pas encore une.
+  workbook.calcProperties.fullCalcOnLoad = true;
 
   const sheet = workbook.addWorksheet(`Dépenses ${month}`, {
     views: [{ state: "frozen", ySplit: 1 }],

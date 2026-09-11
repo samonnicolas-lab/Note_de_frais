@@ -22,6 +22,12 @@ export async function generateFromTemplate(templateBuffer, mapping, ligneEntete,
     throw new Error("Le modèle Excel enregistré ne contient aucune feuille exploitable.");
   }
 
+  // ExcelJS ne recalcule pas les formules déjà présentes dans le modèle (ex. un
+  // total en bas de tableau) : sans ceci, Excel afficherait la valeur figée
+  // enregistrée dans le modèle vierge (souvent 0) au lieu de recalculer une fois
+  // les dépenses insérées. On force le recalcul complet à l'ouverture du fichier.
+  workbook.calcProperties.fullCalcOnLoad = true;
+
   const sorted = [...depenses].sort((a, b) => (a.date > b.date ? 1 : -1));
   const premiereLigneDonnees = ligneEntete + 1;
 
