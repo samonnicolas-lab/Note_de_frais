@@ -13,6 +13,7 @@ import Verification from "./screens/Verification";
 import Confirmation from "./screens/Confirmation";
 import Export from "./screens/Export";
 import Reglages from "./screens/Reglages";
+import ModeleExcel from "./screens/ModeleExcel";
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
               <Route path="/confirmation" element={<Confirmation />} />
               <Route path="/export" element={<Export />} />
               <Route path="/reglages" element={<Reglages />} />
+              <Route path="/modele-excel" element={<ModeleExcel />} />
             </Route>
           </Routes>
         </BrowserRouter>

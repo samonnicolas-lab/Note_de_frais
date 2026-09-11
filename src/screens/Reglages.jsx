@@ -60,6 +60,10 @@ export default function Reglages() {
         </p>
       </div>
 
+      <button type="button" className="btn btn-secondary btn-block" onClick={() => navigate("/modele-excel")}>
+        Modèle Excel d'export
+      </button>
+
       <button type="button" className="btn btn-secondary btn-block" onClick={onLogout}>
         Se déconnecter
       </button>

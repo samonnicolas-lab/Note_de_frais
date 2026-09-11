@@ -73,4 +73,21 @@ export const api = {
 
   usageMensuel: (month) =>
     request(`/usage-mensuel${month ? `?month=${encodeURIComponent(month)}` : ""}`),
+
+  analyserModeleExcel: (fileBase64) =>
+    request("/analyser-modele-excel", {
+      method: "POST",
+      body: JSON.stringify({ fileBase64 }),
+    }),
+
+  enregistrerModeleExcel: (payload) =>
+    request("/enregistrer-modele-excel", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+
+  obtenirModeleExcel: () => request("/obtenir-modele-excel"),
+
+  supprimerModeleExcel: () =>
+    request("/supprimer-modele-excel", { method: "POST" }),
 };

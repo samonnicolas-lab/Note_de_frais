@@ -85,6 +85,50 @@ export async function writeJsonFile(drive, fileId, data) {
   });
 }
 
+/**
+ * Lit un fichier JSON à la racine de "Notes de frais" SANS le créer s'il est absent
+ * (contrairement à readJsonFile). Retourne `null` si le fichier n'existe pas —
+ * utilisé pour des configurations optionnelles (ex. modèle Excel personnalisé).
+ */
+export async function readJsonFileIfExists(drive, filename) {
+  const rootId = await ensureRootFolder(drive);
+  const existing = await findChild(drive, filename, rootId, "application/json");
+  if (!existing) return null;
+  const res = await drive.files.get({ fileId: existing.id, alt: "media" }, { responseType: "json" });
+  return { fileId: existing.id, data: res.data };
+}
+
+/** Télécharge un fichier binaire quelconque (ex. un modèle .xlsx) sous forme de Buffer. */
+export async function downloadBinaryFile(drive, fileId) {
+  const res = await drive.files.get({ fileId, alt: "media" }, { responseType: "arraybuffer" });
+  return Buffer.from(res.data);
+}
+
+/** Crée ou remplace un fichier binaire à la racine de "Notes de frais". Retourne son id. */
+export async function uploadOrReplaceFileInRoot(drive, { filename, mimeType, buffer }) {
+  const rootId = await ensureRootFolder(drive);
+  const existing = await findChild(drive, filename, rootId, null);
+  if (existing) {
+    await drive.files.update({ fileId: existing.id, media: { mimeType, body: Readable.from(buffer) } });
+    return existing.id;
+  }
+  const res = await drive.files.create({
+    requestBody: { name: filename, parents: [rootId] },
+    media: { mimeType, body: Readable.from(buffer) },
+    fields: "id",
+  });
+  return res.data.id;
+}
+
+/** Met à la corbeille un fichier nommé à la racine de "Notes de frais" s'il existe. */
+export async function trashFileInRootIfExists(drive, filename) {
+  const rootId = await ensureRootFolder(drive);
+  const existing = await findChild(drive, filename, rootId, null);
+  if (!existing) return false;
+  await drive.files.update({ fileId: existing.id, requestBody: { trashed: true } });
+  return true;
+}
+
 /** Lit registre.json (le crée vide s'il n'existe pas encore). Retourne { fileId, depenses }. */
 export async function readRegistre(drive) {
   const { fileId, data } = await readJsonFile(drive, REGISTRE_FILENAME, []);

@@ -22,7 +22,7 @@ export default async (request) => {
       throw new HttpError(404, `Aucune dépense trouvée pour ${month}.`);
     }
 
-    const { buffer, filename, mimeType } = await generateMonthlyExport(depenses, month);
+    const { buffer, filename, mimeType } = await generateMonthlyExport(drive, depenses, month);
     const { monthFolderId } = await ensureMonthFolder(drive, month);
     const uploaded = await uploadFile(drive, { parentId: monthFolderId, name: filename, mimeType, buffer });
     await markMonthAsExported(drive, month);
