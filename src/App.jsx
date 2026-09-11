@@ -5,6 +5,7 @@ import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Connexion from "./screens/Connexion";
 import Accueil from "./screens/Accueil";
+import VueAnnuelle from "./screens/VueAnnuelle";
 import DetailDepense from "./screens/DetailDepense";
 import Scanner from "./screens/Scanner";
 import AnalyseEnCours from "./screens/AnalyseEnCours";
@@ -23,6 +24,7 @@ export default function App() {
 
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="/" element={<Accueil />} />
+              <Route path="/annee/:year" element={<VueAnnuelle />} />
               <Route path="/depense/:id" element={<DetailDepense />} />
               <Route path="/scanner" element={<Scanner />} />
               <Route path="/analyse" element={<AnalyseEnCours />} />

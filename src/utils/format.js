@@ -21,6 +21,16 @@ export function monthLabel(month) {
   return `${MONTH_LABELS[m - 1]} ${y}`;
 }
 
+/** Nom du mois seul, sans l'année (ex. "Janvier"). */
+export function monthShortLabel(month) {
+  const m = Number(month.split("-")[1]);
+  return MONTH_LABELS[m - 1];
+}
+
+export function currentYear() {
+  return String(new Date().getFullYear());
+}
+
 export function formatAmount(value) {
   const n = Number(value) || 0;
   return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" });

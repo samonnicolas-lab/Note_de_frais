@@ -49,6 +49,8 @@ export const api = {
 
   listerDepenses: (month) => request(`/lister-depenses?month=${encodeURIComponent(month)}`),
 
+  listerDepensesAnnee: (year) => request(`/lister-depenses-annee?year=${encodeURIComponent(year)}`),
+
   obtenirDepense: (id) => request(`/obtenir-depense?id=${encodeURIComponent(id)}`),
 
   modifierDepense: (id, payload) =>

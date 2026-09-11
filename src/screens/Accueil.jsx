@@ -1,12 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import Spinner from "../components/Spinner";
 import { currentMonth, shiftMonth, monthLabel, formatAmount, formatDateFr } from "../utils/format";
 
 export default function Accueil() {
   const navigate = useNavigate();
-  const [month, setMonth] = useState(currentMonth());
+  const [searchParams] = useSearchParams();
+  const [month, setMonth] = useState(() => {
+    const parametre = searchParams.get("mois");
+    return parametre && /^\d{4}-\d{2}$/.test(parametre) ? parametre : currentMonth();
+  });
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erreur, setErreur] = useState(null);
@@ -46,7 +50,13 @@ export default function Accueil() {
         >
           ‹
         </button>
-        <span className="month-label">{monthLabel(month)}</span>
+        <button
+          type="button"
+          className="month-label month-label-clickable"
+          onClick={() => navigate(`/annee/${month.split("-")[0]}`)}
+        >
+          {monthLabel(month)}
+        </button>
         <button
           type="button"
           className="icon-btn"

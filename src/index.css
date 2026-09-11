@@ -285,6 +285,76 @@ a {
   font-size: 1.05rem;
   min-width: 160px;
   text-align: center;
+  background: none;
+  border: none;
+  color: inherit;
+  font-family: inherit;
+  padding: 4px 8px;
+  border-radius: 8px;
+}
+
+.month-label-clickable {
+  cursor: pointer;
+}
+
+.month-label-clickable:hover,
+.month-label-clickable:focus-visible {
+  background: var(--color-surface);
+  outline: none;
+}
+
+/* Vue annuelle */
+.year-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 480px) {
+  .year-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.year-tile {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.year-tile:hover,
+.year-tile:focus-visible {
+  border-color: var(--color-primary);
+  outline: none;
+}
+
+.year-tile-vide {
+  opacity: 0.55;
+}
+
+.year-tile-actuel {
+  border-color: var(--color-primary);
+  border-width: 2px;
+}
+
+.year-tile-mois {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.year-tile-montant {
+  font-size: 1.05rem;
 }
 
 /* Totals & lists */
