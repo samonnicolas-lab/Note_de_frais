@@ -4,7 +4,7 @@ import { saveModele } from "./lib/modele/index.js";
 
 const MAX_BASE64_LENGTH = Math.floor(6 * 1024 * 1024 * 0.95);
 const CHAMPS_VALIDES = ["date", "fournisseur", "categorie", "montant_ht", "tva", "montant_ttc", "lien_justificatif"];
-const CHAMPS_CELLULES_VALIDES = ["nom", "fonction", "mois", "iban", "total_tva"];
+const CHAMPS_CELLULES_VALIDES = ["nom", "fonction", "mois", "iban"];
 const REFERENCE_CELLULE = /^[A-Za-z]{1,3}\d+$/;
 
 export default async (request) => {

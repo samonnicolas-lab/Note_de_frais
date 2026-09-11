@@ -51,7 +51,7 @@ function trouverColonneLabelTotal(mapping) {
  * @param {number} ligneEntete Numéro de la ligne d'en-tête détectée/validée.
  * @param {Array} depenses Les dépenses du mois à insérer, une ligne par dépense.
  * @param {string} month Mois de l'export, format "YYYY-MM".
- * @param {Record<string, string|null>} cellules Champ d'en-tête -> référence de cellule unique (ex. { nom: "B2" }).
+ * @param {Record<string, string|null>} cellules Champ d'en-tête (nom, fonction, mois, iban) -> référence de cellule unique (ex. { nom: "B2" }).
  * @param {{ nom?: string, fonction?: string, iban?: string }} profil Informations personnelles de l'utilisateur.
  */
 export async function generateFromTemplate(templateBuffer, mapping, ligneEntete, depenses, month, cellules = {}, profil = {}) {
@@ -113,19 +113,23 @@ export async function generateFromTemplate(templateBuffer, mapping, ligneEntete,
     cell.value = { formula: `SUM(${colonne}${premiereLigneDonnees}:${colonne}${derniereLigneDonnees})` };
     cell.numFmt = "#,##0.00 €";
   }
+  // Le détail TVA par ligne est un texte formaté (ex. "20% (4,00 €)"), non
+  // sommable par une formule Excel : le total TVA est donc calculé côté serveur
+  // et placé automatiquement sur la même ligne de total, dans la colonne TVA
+  // déjà mappée — pas de cellule à choisir séparément.
+  if (mapping.tva) {
+    const cell = totalRow.getCell(mapping.tva);
+    cell.value = totalTvaMontant(sorted);
+    cell.numFmt = "#,##0.00 €";
+  }
   totalRow.font = { bold: true };
 
   // Informations d'en-tête ponctuelles (une seule cellule chacune, indépendantes
-  // du tableau de dépenses) : identité, mois de référence, IBAN et total TVA.
+  // du tableau de dépenses) : identité, fonction, mois de référence, IBAN.
   if (cellules.nom && profil.nom) worksheet.getCell(cellules.nom).value = profil.nom;
   if (cellules.fonction && profil.fonction) worksheet.getCell(cellules.fonction).value = profil.fonction;
   if (cellules.iban && profil.iban) worksheet.getCell(cellules.iban).value = profil.iban;
   if (cellules.mois && month) worksheet.getCell(cellules.mois).value = formatMoisLabel(month);
-  if (cellules.total_tva) {
-    const cell = worksheet.getCell(cellules.total_tva);
-    cell.value = totalTvaMontant(sorted);
-    cell.numFmt = "#,##0.00 €";
-  }
 
   return workbook;
 }

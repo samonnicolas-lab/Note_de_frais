@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { api } from "../api/client";
 import { currentMonth, monthLabel, formatUSD } from "../utils/format";
+import { ibanEstValide, nettoyerIban } from "../utils/iban";
 import Spinner from "../components/Spinner";
 
 export default function Reglages() {
@@ -17,6 +18,7 @@ export default function Reglages() {
   const [enregistrementProfil, setEnregistrementProfil] = useState(false);
   const [profilEnregistre, setProfilEnregistre] = useState(false);
   const [erreurProfil, setErreurProfil] = useState(null);
+  const [avertissementIban, setAvertissementIban] = useState(null);
 
   useEffect(() => {
     let annule = false;
@@ -47,11 +49,24 @@ export default function Reglages() {
     event.preventDefault();
     setEnregistrementProfil(true);
     setErreurProfil(null);
+    setAvertissementIban(null);
     setProfilEnregistre(false);
+
+    // Un IBAN mal formé n'empêche jamais d'enregistrer le reste des informations :
+    // on l'efface simplement et on prévient l'utilisateur, plutôt que de bloquer.
+    const ibanSaisi = profil.iban.trim();
+    const ibanValide = !ibanSaisi || ibanEstValide(ibanSaisi);
+    const aCorriger = { ...profil, iban: ibanValide ? nettoyerIban(ibanSaisi) : "" };
+
     try {
-      const data = await api.enregistrerProfil(profil);
+      const data = await api.enregistrerProfil(aCorriger);
       setProfil(data.profil);
       setProfilEnregistre(true);
+      if (!ibanValide) {
+        setAvertissementIban(
+          "L'IBAN saisi n'est pas valide (format international attendu, ex. FR76 1234 5678 9012 3456 7890 189). Le champ a été laissé vide — merci de le ressaisir correctement."
+        );
+      }
     } catch (err) {
       setErreurProfil(err.message || "L'enregistrement a échoué.");
     } finally {
@@ -131,6 +146,7 @@ export default function Reglages() {
             </label>
 
             {erreurProfil && <div className="alert alert-error">{erreurProfil}</div>}
+            {avertissementIban && <div className="alert alert-warning">{avertissementIban}</div>}
             {profilEnregistre && <div className="alert alert-success">Enregistré ✓</div>}
 
             <button type="submit" className="btn btn-secondary btn-block" disabled={enregistrementProfil}>

@@ -15,15 +15,16 @@ const CHAMPS = [
 ];
 
 // Informations d'en-tête : une seule cellule chacune (pas répétées par ligne).
+// Le total TVA n'en fait pas partie : il est ajouté automatiquement sur la ligne
+// de total, dans la colonne TVA déjà mappée ci-dessus — pas de cellule à choisir.
 const CHAMPS_CELLULES = [
   { cle: "nom", label: "Nom" },
   { cle: "fonction", label: "Fonction" },
   { cle: "mois", label: "Mois de référence" },
   { cle: "iban", label: "N° IBAN" },
-  { cle: "total_tva", label: "Total TVA" },
 ];
 
-const CELLULES_VIDES = { nom: "", fonction: "", mois: "", iban: "", total_tva: "" };
+const CELLULES_VIDES = { nom: "", fonction: "", mois: "", iban: "" };
 const REFERENCE_CELLULE = /^[A-Za-z]{1,3}\d+$/;
 
 const MOTS_CLES = {
@@ -255,7 +256,10 @@ export default function ModeleExcel() {
           <div className="form">
             {CHAMPS.map((champ) => (
               <label className="field" key={champ.cle}>
-                <span>{champ.label}</span>
+                <span>
+                  {champ.label}
+                  {champ.cle === "tva" && " (le total TVA y sera aussi inscrit automatiquement)"}
+                </span>
                 <select
                   className="field-input"
                   value={mapping[champ.cle] || ""}
