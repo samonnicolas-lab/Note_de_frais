@@ -7,14 +7,11 @@ import { getModeleConfig, downloadModeleTemplate } from "../modele/index.js";
 import { getProfil } from "../profil/index.js";
 
 export async function generateMonthlyExport(drive, depenses, month) {
-  const config = await getModeleConfig(drive);
+  const [config, profil] = await Promise.all([getModeleConfig(drive), getProfil(drive)]);
 
   let workbook;
   if (config) {
-    const [templateBuffer, profil] = await Promise.all([
-      downloadModeleTemplate(drive, config.templateFileId),
-      getProfil(drive),
-    ]);
+    const templateBuffer = await downloadModeleTemplate(drive, config.templateFileId);
     workbook = await generateFromTemplate(
       templateBuffer,
       config.mapping,
@@ -25,7 +22,7 @@ export async function generateMonthlyExport(drive, depenses, month) {
       profil
     );
   } else {
-    workbook = await generateFixedColumnsWorkbook(depenses, month);
+    workbook = await generateFixedColumnsWorkbook(depenses, month, profil);
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
