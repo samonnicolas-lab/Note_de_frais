@@ -8,6 +8,26 @@ function formatTva(tva) {
   return tva.map((t) => `${t.taux}% (${Number(t.montant).toFixed(2)} €)`).join(" ; ");
 }
 
+function lettreVersNumero(lettre) {
+  let n = 0;
+  for (const c of lettre.toUpperCase()) {
+    n = n * 26 + (c.charCodeAt(0) - 64);
+  }
+  return n;
+}
+
+/** Choisit la colonne où écrire le libellé "Total" : une colonne texte, pas une colonne de montant. */
+function trouverColonneLabelTotal(mapping) {
+  for (const champ of ["fournisseur", "categorie", "date"]) {
+    if (mapping[champ]) return mapping[champ];
+  }
+  const candidates = Object.entries(mapping)
+    .filter(([champ, col]) => col && champ !== "montant_ht" && champ !== "montant_ttc")
+    .map(([, col]) => col);
+  if (candidates.length === 0) return null;
+  return candidates.sort((a, b) => lettreVersNumero(a) - lettreVersNumero(b))[0];
+}
+
 /**
  * @param {Buffer} templateBuffer Le modèle .xlsx vierge de l'entreprise.
  * @param {Record<string, string|null>} mapping Champ interne -> lettre de colonne (ou null).
@@ -55,6 +75,25 @@ export async function generateFromTemplate(templateBuffer, mapping, ligneEntete,
       };
     }
   });
+
+  // Le modèle ne contient pas nécessairement de ligne de total : on en ajoute
+  // toujours une juste après la dernière dépense insérée, comme le fait l'export
+  // à colonnes fixes, avec une somme sur les colonnes de montants mappées.
+  const derniereLigneDonnees = premiereLigneDonnees + sorted.length - 1;
+  const ligneTotal = derniereLigneDonnees + 1;
+  const totalRow = worksheet.getRow(ligneTotal);
+
+  const colonneLabel = trouverColonneLabelTotal(mapping);
+  if (colonneLabel) totalRow.getCell(colonneLabel).value = "Total";
+
+  for (const champMontant of ["montant_ht", "montant_ttc"]) {
+    const colonne = mapping[champMontant];
+    if (!colonne) continue;
+    const cell = totalRow.getCell(colonne);
+    cell.value = { formula: `SUM(${colonne}${premiereLigneDonnees}:${colonne}${derniereLigneDonnees})` };
+    cell.numFmt = "#,##0.00 €";
+  }
+  totalRow.font = { bold: true };
 
   return workbook;
 }
