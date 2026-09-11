@@ -22,5 +22,3 @@ export default async (request) => {
     return json(200, { month, depenses, total_ttc, total_ht });
   });
 };
-
-export const config = { path: "/api/lister-depenses" };

@@ -19,5 +19,3 @@ export default async (request) => {
     return json(200, usage);
   });
 };
-
-export const config = { path: "/api/usage-mensuel" };

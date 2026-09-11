@@ -69,5 +69,3 @@ export default async (request) => {
     return json(200, { depense: saved });
   });
 };
-
-export const config = { path: "/api/enregistrer-depense" };

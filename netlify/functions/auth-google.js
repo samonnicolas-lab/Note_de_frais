@@ -97,5 +97,3 @@ export default async (request) => {
     }
   });
 };
-
-export const config = { path: "/api/auth-google" };

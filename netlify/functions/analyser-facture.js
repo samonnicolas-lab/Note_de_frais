@@ -43,5 +43,3 @@ export default async (request) => {
     return json(200, extraction);
   });
 };
-
-export const config = { path: "/api/analyser-facture" };
