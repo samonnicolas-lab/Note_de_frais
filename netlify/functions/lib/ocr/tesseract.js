@@ -24,10 +24,17 @@ let workerPromise = null;
 
 function obtenirWorker() {
   if (!workerPromise) {
-    workerPromise = createWorker("fra", 1, { langPath: LANG_PATH, cachePath: "/tmp" }).catch((err) => {
-      workerPromise = null;
-      throw err;
-    });
+    console.log("[OCR] création du worker Tesseract...");
+    const t0 = Date.now();
+    workerPromise = createWorker("fra", 1, { langPath: LANG_PATH, cachePath: "/tmp" })
+      .then((worker) => {
+        console.log(`[OCR] worker Tesseract prêt en ${Date.now() - t0} ms`);
+        return worker;
+      })
+      .catch((err) => {
+        workerPromise = null;
+        throw err;
+      });
   }
   return workerPromise;
 }
@@ -35,6 +42,9 @@ function obtenirWorker() {
 /** @param {Buffer} image @returns {Promise<string>} texte brut reconnu. */
 export async function reconnaitreTexte(image) {
   const worker = await obtenirWorker();
+  console.log(`[OCR] appel worker.recognize() sur une image de ${image.length} octets...`);
+  const t0 = Date.now();
   const { data } = await worker.recognize(image);
+  console.log(`[OCR] worker.recognize() terminé en ${Date.now() - t0} ms`);
   return data.text;
 }
