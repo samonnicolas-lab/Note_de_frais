@@ -65,6 +65,12 @@ export const api = {
       body: JSON.stringify({ id }),
     }),
 
+  supprimerDepenses: (ids) =>
+    request("/supprimer-depenses", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    }),
+
   exporterMensuel: (month) =>
     request("/exporter-mensuel", {
       method: "POST",

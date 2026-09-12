@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import Spinner from "../components/Spinner";
+import ConfirmDialog from "../components/ConfirmDialog";
 import { currentMonth, shiftMonth, monthLabel, formatAmount, formatDateFr } from "../utils/format";
 
 export default function Accueil() {
@@ -14,6 +15,10 @@ export default function Accueil() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [erreur, setErreur] = useState(null);
+
+  const [selection, setSelection] = useState(() => new Set());
+  const [confirmationOuverte, setConfirmationOuverte] = useState(false);
+  const [suppressionEnCours, setSuppressionEnCours] = useState(false);
 
   const charger = useCallback(async (m) => {
     setLoading(true);
@@ -30,10 +35,38 @@ export default function Accueil() {
 
   useEffect(() => {
     charger(month);
+    setSelection(new Set());
   }, [month, charger]);
 
   const depenses = data?.depenses || [];
   const sorted = [...depenses].sort((a, b) => (a.date < b.date ? 1 : -1));
+
+  const toggleSelection = (id) => {
+    setSelection((s) => {
+      const copie = new Set(s);
+      if (copie.has(id)) copie.delete(id);
+      else copie.add(id);
+      return copie;
+    });
+  };
+
+  const annulerSelection = () => setSelection(new Set());
+
+  const confirmerSuppression = async () => {
+    setSuppressionEnCours(true);
+    setErreur(null);
+    try {
+      await api.supprimerDepenses([...selection]);
+      setConfirmationOuverte(false);
+      setSelection(new Set());
+      await charger(month);
+    } catch (err) {
+      setConfirmationOuverte(false);
+      setErreur(err.message || "La suppression a échoué.");
+    } finally {
+      setSuppressionEnCours(false);
+    }
+  };
 
   return (
     <div className="screen">
@@ -90,32 +123,40 @@ export default function Accueil() {
           ) : (
             <ul className="expense-list">
               {sorted.map((d) => (
-                <li
-                  key={d.id}
-                  className="expense-item expense-item-clickable"
-                  onClick={() => navigate(`/depense/${d.id}`)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") navigate(`/depense/${d.id}`); }}
-                >
-                  <div className="expense-item-main">
-                    <span className="expense-fournisseur">{d.fournisseur}</span>
-                    <span className="badge">{d.categorie}</span>
-                    {d.statut === "exportee" && <span className="badge badge-locked">🔒 Exportée</span>}
-                  </div>
-                  <div className="expense-item-sub">
-                    <span className="text-muted">{formatDateFr(d.date)}</span>
-                    {d.justificatif_drive_url && (
-                      <a
-                        href={d.justificatif_drive_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="link-small"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        Justificatif
-                      </a>
-                    )}
+                <li key={d.id} className="expense-item expense-item-selectable">
+                  <input
+                    type="checkbox"
+                    className="expense-checkbox"
+                    checked={selection.has(d.id)}
+                    onChange={() => toggleSelection(d.id)}
+                    aria-label={`Sélectionner la dépense ${d.fournisseur} du ${formatDateFr(d.date)}`}
+                  />
+                  <div
+                    className="expense-item-clickable-zone"
+                    onClick={() => navigate(`/depense/${d.id}`)}
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") navigate(`/depense/${d.id}`); }}
+                  >
+                    <div className="expense-item-main">
+                      <span className="expense-fournisseur">{d.fournisseur}</span>
+                      <span className="badge">{d.categorie}</span>
+                      {d.statut === "exportee" && <span className="badge badge-locked">🔒 Exportée</span>}
+                    </div>
+                    <div className="expense-item-sub">
+                      <span className="text-muted">{formatDateFr(d.date)}</span>
+                      {d.justificatif_drive_url && (
+                        <a
+                          href={d.justificatif_drive_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="link-small"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Justificatif
+                        </a>
+                      )}
+                    </div>
                   </div>
                   <strong className="expense-amount">{formatAmount(d.montant_ttc)}</strong>
                 </li>
@@ -123,6 +164,31 @@ export default function Accueil() {
             </ul>
           )}
         </>
+      )}
+
+      {selection.size > 0 && (
+        <div className="selection-bar">
+          <span className="selection-bar-count">{selection.size} sélectionnée{selection.size > 1 ? "s" : ""}</span>
+          <div className="selection-bar-actions">
+            <button type="button" className="btn btn-secondary" onClick={annulerSelection}>
+              Annuler
+            </button>
+            <button type="button" className="btn btn-danger" onClick={() => setConfirmationOuverte(true)}>
+              Supprimer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {confirmationOuverte && (
+        <ConfirmDialog
+          titre="Supprimer la sélection ?"
+          message={`${selection.size} dépense${selection.size > 1 ? "s" : ""} et ${selection.size > 1 ? "leurs" : "son"} justificatif${selection.size > 1 ? "s" : ""} seront définitivement supprimés (justificatif mis à la corbeille sur Drive).`}
+          confirmLabel="Supprimer"
+          enCours={suppressionEnCours}
+          onConfirm={confirmerSuppression}
+          onCancel={() => setConfirmationOuverte(false)}
+        />
       )}
     </div>
   );

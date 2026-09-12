@@ -129,6 +129,18 @@ export async function trashFileInRootIfExists(drive, filename) {
   return true;
 }
 
+/** Met à la corbeille un fichier Drive dont on connaît déjà l'id (ex. un justificatif). */
+export async function trashFileById(drive, fileId) {
+  if (!fileId) return;
+  try {
+    await drive.files.update({ fileId, requestBody: { trashed: true } });
+  } catch (err) {
+    // Le fichier a peut-être déjà été supprimé manuellement sur Drive : on ne
+    // bloque pas la suppression de la dépense pour autant.
+    console.error(`Impossible de mettre à la corbeille le fichier ${fileId} :`, err.message);
+  }
+}
+
 /** Lit registre.json (le crée vide s'il n'existe pas encore). Retourne { fileId, depenses }. */
 export async function readRegistre(drive) {
   const { fileId, data } = await readJsonFile(drive, REGISTRE_FILENAME, []);

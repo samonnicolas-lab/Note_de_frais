@@ -85,6 +85,20 @@ export async function unlockDepense(drive, id) {
   return updateDepense(drive, id, { statut: STATUT_VALIDEE });
 }
 
+/**
+ * Supprime une ou plusieurs dépenses du registre (par id) en une seule lecture/
+ * écriture. Retourne les dépenses effectivement supprimées, pour permettre à
+ * l'appelant de mettre à la corbeille leurs justificatifs sur Drive.
+ */
+export async function deleteDepenses(drive, ids) {
+  const idSet = new Set(ids);
+  const { fileId, depenses } = await readRegistre(drive);
+  const supprimees = depenses.filter((d) => idSet.has(d.id));
+  const restantes = depenses.filter((d) => !idSet.has(d.id));
+  await writeRegistre(drive, fileId, restantes);
+  return supprimees;
+}
+
 /** Verrouille toutes les dépenses d'un mois donné après génération de l'export. */
 export async function markMonthAsExported(drive, month) {
   const { fileId, depenses } = await readRegistre(drive);

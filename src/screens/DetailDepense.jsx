@@ -2,8 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import { prepareFileForUpload } from "../utils/image";
+import { formatDateFr } from "../utils/format";
 import DepenseFieldsForm from "../components/DepenseFieldsForm";
 import JustificatifPreview from "../components/JustificatifPreview";
+import ConfirmDialog from "../components/ConfirmDialog";
 import Spinner from "../components/Spinner";
 
 const EMPTY_FORM = { date: "", fournisseur: "", categorie: "Autre", montant_ht: "", montant_ttc: "", tva: [] };
@@ -31,6 +33,8 @@ export default function DetailDepense() {
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState(null);
   const [nouveauFichier, setNouveauFichier] = useState(null); // { base64, mimeType, fileName, previewUrl }
+  const [confirmationOuverte, setConfirmationOuverte] = useState(false);
+  const [suppressionEnCours, setSuppressionEnCours] = useState(false);
 
   useEffect(() => {
     let annule = false;
@@ -113,6 +117,20 @@ export default function DetailDepense() {
     }
   };
 
+  const confirmerSuppression = async () => {
+    setSuppressionEnCours(true);
+    setErreur(null);
+    try {
+      await api.supprimerDepenses([id]);
+      navigate("/");
+    } catch (err) {
+      setConfirmationOuverte(false);
+      setErreur(err.message || "La suppression a échoué.");
+    } finally {
+      setSuppressionEnCours(false);
+    }
+  };
+
   if (chargement) {
     return (
       <div className="screen center-screen">
@@ -174,10 +192,32 @@ export default function DetailDepense() {
             {enCours ? <Spinner label="Enregistrement..." /> : "Enregistrer les modifications"}
           </button>
         )}
+        {!verrouillee && (
+          <button
+            type="button"
+            className="btn btn-danger btn-block"
+            onClick={() => setConfirmationOuverte(true)}
+            disabled={enCours}
+          >
+            Supprimer cette dépense
+          </button>
+        )}
+
         <button type="button" className="btn btn-secondary btn-block" onClick={() => navigate("/")}>
           Retour aux dépenses
         </button>
       </form>
+
+      {confirmationOuverte && (
+        <ConfirmDialog
+          titre="Supprimer cette dépense ?"
+          message={`${depense.fournisseur} du ${formatDateFr(depense.date)} sera définitivement supprimée, justificatif compris (mis à la corbeille sur Drive).`}
+          confirmLabel="Supprimer"
+          enCours={suppressionEnCours}
+          onConfirm={confirmerSuppression}
+          onCancel={() => setConfirmationOuverte(false)}
+        />
+      )}
     </div>
   );
 }

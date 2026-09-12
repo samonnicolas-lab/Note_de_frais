@@ -179,6 +179,15 @@ a {
   font-weight: 500;
 }
 
+.btn-danger {
+  background: var(--color-error);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  filter: brightness(0.92);
+}
+
 .icon-btn {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
@@ -388,12 +397,17 @@ a {
   gap: 4px 12px;
 }
 
-.expense-item-clickable {
+.expense-item-clickable-zone {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
   cursor: pointer;
+  border-radius: 8px;
 }
 
-.expense-item-clickable:hover,
-.expense-item-clickable:focus-visible {
+.expense-item-clickable-zone:hover,
+.expense-item-clickable-zone:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px var(--color-primary);
 }
@@ -417,9 +431,9 @@ a {
 }
 
 .expense-amount {
-  grid-row: 1 / span 2;
   align-self: center;
   font-size: 1.05rem;
+  white-space: nowrap;
 }
 
 .badge {
@@ -673,4 +687,91 @@ a {
 .status-warning {
   background: var(--color-warning-bg);
   color: var(--color-warning);
+}
+
+/* Sélection multiple et suppression */
+.expense-checkbox {
+  width: 20px;
+  height: 20px;
+  accent-color: var(--color-primary);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.expense-item-selectable {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+
+.selection-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 64px;
+  z-index: 15;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  box-shadow: 0 -2px 8px rgba(16, 24, 40, 0.08);
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.selection-bar-count {
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+
+.selection-bar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 24, 40, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 30;
+  padding: 16px;
+}
+
+@media (min-width: 480px) {
+  .confirm-overlay {
+    align-items: center;
+  }
+}
+
+.confirm-panel {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.confirm-panel h2 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+
+.confirm-actions .btn {
+  flex: 1;
 }
