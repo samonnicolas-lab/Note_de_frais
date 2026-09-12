@@ -8,12 +8,24 @@
 
 # analyser-facture embarque le pipeline OCR (Phase 3) : rastérisation PDF
 # (@napi-rs/canvas, binaire natif) + reconnaissance de texte (tesseract.js,
-# fichiers wasm + worker chargés dynamiquement). On les exclut du bundling
-# esbuild (qui casserait ces assets non-JS) pour que Netlify copie tel quel
-# leur dossier node_modules, et on embarque les données de langue françaises.
+# fichiers wasm + worker). `external_node_modules` empêche esbuild d'essayer
+# de rebundler ces paquets (binaire natif + wasm, incompatibles avec un
+# bundling classique) : leur dossier node_modules est copié tel quel. Mais
+# pdfjs-dist et tesseract.js chargent certains de leurs propres fichiers
+# (worker, cœur wasm) via un chemin calculé à l'exécution plutôt qu'un
+# `import`/`require` littéral : l'analyse statique de Netlify ne les détecte
+# pas et les omet du paquet déployé (constaté en production : "Cannot find
+# module .../pdf.worker.mjs"). `included_files` les force explicitement,
+# ainsi que les données de langue françaises de l'OCR.
 [functions."analyser-facture"]
   external_node_modules = ["@napi-rs/canvas", "tesseract.js", "tesseract.js-core", "pdfjs-dist"]
-  included_files = ["netlify/functions/lib/ocr/lang-data/**"]
+  included_files = [
+    "netlify/functions/lib/ocr/lang-data/**",
+    "node_modules/pdfjs-dist/**",
+    "node_modules/tesseract.js/**",
+    "node_modules/tesseract.js-core/**",
+    "node_modules/@napi-rs/**",
+  ]
 
 # Toutes les fonctions serverless sont exposées sous /api/*.
 # Cette règle est évaluée avant le fallback SPA ci-dessous.
