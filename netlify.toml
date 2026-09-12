@@ -6,6 +6,15 @@
 [functions]
   node_bundler = "esbuild"
 
+# analyser-facture embarque le pipeline OCR (Phase 3) : rastérisation PDF
+# (@napi-rs/canvas, binaire natif) + reconnaissance de texte (tesseract.js,
+# fichiers wasm + worker chargés dynamiquement). On les exclut du bundling
+# esbuild (qui casserait ces assets non-JS) pour que Netlify copie tel quel
+# leur dossier node_modules, et on embarque les données de langue françaises.
+[functions."analyser-facture"]
+  external_node_modules = ["@napi-rs/canvas", "tesseract.js", "tesseract.js-core", "pdfjs-dist"]
+  included_files = ["netlify/functions/lib/ocr/lang-data/**"]
+
 # Toutes les fonctions serverless sont exposées sous /api/*.
 # Cette règle est évaluée avant le fallback SPA ci-dessous.
 [[redirects]]

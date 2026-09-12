@@ -2,6 +2,9 @@ import { json, error, withErrorHandling, HttpError } from "./lib/http.js";
 import { requireDriveClient } from "./lib/auth/session.js";
 import { runExtractionPipeline } from "./lib/pipeline/index.js";
 import { recordUsage } from "./lib/usage/index.js";
+import { construireSignature, signatureExploitable } from "./lib/ocr/signature.js";
+import { normaliserFournisseur } from "./lib/ocr/normaliser.js";
+import { upsertSignature } from "./lib/supabase/client.js";
 
 const ALLOWED_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/heic", "application/pdf"]);
 // Limite conservatrice : les Netlify Functions synchrones plafonnent le corps de
@@ -28,7 +31,7 @@ export default async (request) => {
       throw new HttpError(413, "Fichier trop volumineux. Merci de réessayer avec une photo compressée (< 4 Mo).");
     }
 
-    const { extraction, usage } = await runExtractionPipeline({ base64Data: fileBase64, mimeType });
+    const { extraction, usage, ocrText } = await runExtractionPipeline({ base64Data: fileBase64, mimeType });
 
     if (usage) {
       // Le compteur d'usage ne doit jamais faire échouer la réponse à l'utilisateur :
@@ -37,6 +40,24 @@ export default async (request) => {
         await recordUsage(drive, usage);
       } catch (err) {
         console.error("Échec de l'enregistrement du compteur d'usage IA :", err);
+      }
+
+      // Claude a été sollicité (la reconnaissance par signature n'a pas suffi) :
+      // on apprend la structure de ce fournisseur pour économiser l'appel la
+      // prochaine fois, pour tous les utilisateurs (base Supabase partagée).
+      if (ocrText) {
+        try {
+          const structure = construireSignature(ocrText, extraction);
+          if (signatureExploitable(structure)) {
+            await upsertSignature({
+              fournisseurNormalise: normaliserFournisseur(extraction.fournisseur),
+              fournisseurAffiche: extraction.fournisseur,
+              structure,
+            });
+          }
+        } catch (err) {
+          console.error("Échec de l'apprentissage de la signature fournisseur :", err.message);
+        }
       }
     }
 
