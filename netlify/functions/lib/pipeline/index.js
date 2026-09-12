@@ -12,10 +12,13 @@ import { extraireTexteOcr } from "../ocr/extraireTexte.js";
 // `null`/`undefined` pour laisser la main à l'étape suivante.
 const PIPELINE_STEPS = [signatureOcrStep, claudeVisionStep];
 
-// Budget de temps pour l'OCR (rastérisation PDF incluse) : on le garde
-// volontairement court pour toujours laisser assez de marge à l'appel Claude
-// de repli dans le délai global d'une fonction Netlify synchrone.
-const OCR_TIMEOUT_MS = Number(process.env.OCR_TIMEOUT_MS) || 6000;
+// Budget de temps pour l'OCR (rastérisation PDF incluse) : on le garde assez
+// court pour toujours laisser de la marge à l'appel Claude de repli dans le
+// délai global d'une fonction Netlify synchrone. Sur un conteneur "froid"
+// (premier chargement du moteur OCR), ce budget peut ne pas suffire — c'est
+// sans risque : le pipeline retombe alors simplement sur Claude. Réglable
+// sans redéploiement via la variable d'environnement Netlify OCR_TIMEOUT_MS.
+const OCR_TIMEOUT_MS = Number(process.env.OCR_TIMEOUT_MS) || 8000;
 
 function avecDelai(promesse, ms) {
   return Promise.race([
