@@ -34,7 +34,14 @@ export async function signatureOcrStep({ ocrText }) {
   if (!meilleure) return null;
 
   const extraitPartiel = appliquerSignature(ocrText, meilleure.structure);
-  if (!extraitPartiel) return null;
+  if (!extraitPartiel) {
+    console.error(
+      `Signature trouvée pour "${meilleure.fournisseur_affiche}" mais inapplicable (ancre introuvable dans ce texte OCR), repli sur Claude.`,
+      "structure:", JSON.stringify(meilleure.structure),
+      "texteOcr:", ocrText.slice(0, 1000)
+    );
+    return null;
+  }
 
   majUtilisationSignature(meilleure.id, meilleure.nb_utilisations).catch((err) =>
     console.error("Échec de la mise à jour du compteur de signature :", err.message)

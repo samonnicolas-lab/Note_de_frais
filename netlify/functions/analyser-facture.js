@@ -54,6 +54,16 @@ export default async (request) => {
               fournisseurAffiche: extraction.fournisseur,
               structure,
             });
+            console.log(`Signature apprise pour "${extraction.fournisseur}".`);
+          } else {
+            // Diagnostic temporaire : aide à ajuster la logique de repérage
+            // des ancres face à de vraies factures (mise en page, OCR imparfait).
+            console.error(
+              "Signature non exploitable (ancre montant TTC introuvable), apprentissage ignoré.",
+              "extraction:", JSON.stringify(extraction),
+              "structure:", JSON.stringify(structure),
+              "texteOcr:", ocrText.slice(0, 1000)
+            );
           }
         } catch (err) {
           console.error("Échec de l'apprentissage de la signature fournisseur :", err.message);
