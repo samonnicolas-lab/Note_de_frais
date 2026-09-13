@@ -5,6 +5,8 @@
 import { claudeVisionStep } from "./steps/claudeVisionStep.js";
 import { signatureOcrStep } from "./steps/signatureOcrStep.js";
 import { extraireTexteOcr } from "../ocr/extraireTexte.js";
+import { annulerRenduEnCours } from "../ocr/pdf.js";
+import { terminerWorker } from "../ocr/tesseract.js";
 import { avecDelai } from "../util/timeout.js";
 
 // Ordre d'exécution : chaque étape peut renvoyer `{ extraction, usage }` (auquel
@@ -21,12 +23,23 @@ const PIPELINE_STEPS = [signatureOcrStep, claudeVisionStep];
 // sans redéploiement via la variable d'environnement Netlify OCR_TIMEOUT_MS.
 const OCR_TIMEOUT_MS = Number(process.env.OCR_TIMEOUT_MS) || 11000;
 
-/** Ne doit jamais lever d'exception : un échec OCR se traduit juste par un repli sur Claude. */
+/**
+ * Ne doit jamais lever d'exception : un échec OCR se traduit juste par un repli
+ * sur Claude. Important : au-delà du délai, on n'abandonne pas seulement la
+ * promesse (Promise.race ne l'arrête pas) — on interrompt activement le rendu
+ * PDF et on tue le worker Tesseract en cours, sans quoi ce travail continue de
+ * consommer du CPU en tâche de fond pendant l'appel à Claude. Constaté en
+ * production : un PDF au rendu anormalement lent (10+ s) a ainsi fait échouer
+ * toute la requête (temps d'exécution total de la fonction dépassé) alors que
+ * le repli sur Claude aurait dû suffire.
+ */
 async function calculerTexteOcrSansExploser({ base64Data, mimeType }) {
   try {
     return await avecDelai(extraireTexteOcr(base64Data, mimeType), OCR_TIMEOUT_MS, "Délai OCR dépassé");
   } catch (err) {
     console.error("OCR indisponible, repli sur Claude :", err.message);
+    annulerRenduEnCours();
+    terminerWorker().catch(() => {});
     return null;
   }
 }

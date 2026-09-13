@@ -48,3 +48,22 @@ export async function reconnaitreTexte(image) {
   console.log(`[OCR] worker.recognize() terminé en ${Date.now() - t0} ms`);
   return data.text;
 }
+
+/**
+ * Tue le worker en cours (et le job qu'il traite, le cas échéant) pour libérer
+ * le CPU au profit du repli sur Claude — appelé quand le budget de temps
+ * global de l'OCR est dépassé pendant un recognize() encore en cours. Le
+ * prochain appel recréera un worker neuf (léger surcoût, sans conséquence
+ * puisqu'on vient déjà de renoncer à cette tentative d'OCR).
+ */
+export async function terminerWorker() {
+  if (!workerPromise) return;
+  const promesseCourante = workerPromise;
+  workerPromise = null;
+  try {
+    const worker = await promesseCourante;
+    await worker.terminate();
+  } catch {
+    // Le worker n'a peut-être jamais fini de démarrer, ou est déjà mort : sans conséquence ici.
+  }
+}

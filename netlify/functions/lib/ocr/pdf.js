@@ -62,13 +62,37 @@ export async function extraireTexteNatifPdf(bufferPdf) {
   });
 }
 
+// Référence vers le rendu PDF en cours, pour pouvoir l'interrompre depuis
+// l'extérieur (cf. annulerRenduEnCours) si le budget de temps global de l'OCR
+// est dépassé pendant que ce rendu tourne encore — constaté en prod : un PDF
+// dont la page contient une image scannée à très haute résolution peut
+// prendre 10+ secondes à rendre, et laisser ce travail se poursuivre en tâche
+// de fond après le repli sur Claude ralentit inutilement toute la requête.
+let tacheRenduCourante = null;
+
 /** @returns {Promise<Buffer>} PNG de la première page, pour un PDF sans texte exploitable (scan image). */
 export async function rasterizerPremierePage(bufferPdf, echelle = 2) {
   return avecPremierePage(bufferPdf, async (page) => {
     const viewport = page.getViewport({ scale: echelle });
     const canvas = createCanvas(viewport.width, viewport.height);
     const context = canvas.getContext("2d");
-    await page.render({ canvasContext: context, viewport, canvas }).promise;
+    tacheRenduCourante = page.render({ canvasContext: context, viewport, canvas });
+    try {
+      await tacheRenduCourante.promise;
+    } finally {
+      tacheRenduCourante = null;
+    }
     return canvas.toBuffer("image/png");
   });
+}
+
+/** Interrompt le rendu PDF en cours, s'il y en a un (libère le CPU pour le repli sur Claude). */
+export function annulerRenduEnCours() {
+  if (tacheRenduCourante) {
+    try {
+      tacheRenduCourante.cancel();
+    } catch {
+      // Déjà terminé ou déjà annulé : sans conséquence.
+    }
+  }
 }
