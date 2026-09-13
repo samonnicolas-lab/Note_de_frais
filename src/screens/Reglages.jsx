@@ -111,7 +111,7 @@ export default function Reglages() {
         <p className="text-muted text-small">
           Cette application utilise l'API Claude (Anthropic) pour lire vos factures automatiquement.
           Une seule clé API, payée par le développeur, est partagée par tous les utilisateurs de l'app.
-          Pour éviter toute dérive, l'analyse par IA est limitée à environ 440 factures par mois au
+          Pour éviter toute dérive, l'analyse par IA est limitée à environ 880 factures par mois au
           total (tous utilisateurs confondus) ; au-delà, elle est suspendue jusqu'au mois suivant. Les
           factures des fournisseurs déjà reconnues automatiquement continuent cependant de fonctionner
           normalement, sans passer par l'IA.

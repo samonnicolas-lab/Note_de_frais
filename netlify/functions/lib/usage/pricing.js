@@ -6,8 +6,9 @@ const PRICING_PER_MILLION_TOKENS_USD = {
   "claude-haiku-4-5": { input: 1.0, output: 5.0 },
 };
 
-// Repli si un modèle inconnu (non listé ci-dessus) a été utilisé : on prend le
-// tarif Sonnet 5, modèle par défaut du pipeline d'extraction.
+// Repli si un modèle inconnu (non listé ci-dessus) a été utilisé : tarif
+// Sonnet 5 par prudence (le plus élevé des deux, pour ne jamais sous-estimer
+// le coût réel dans ce cas).
 const DEFAULT_PRICING = PRICING_PER_MILLION_TOKENS_USD["claude-sonnet-5"];
 
 export function estimateCostUSD({ model, inputTokens, outputTokens }) {
@@ -29,7 +30,9 @@ export const PLAFOND_MENSUEL_USD = Number(process.env.PLAFOND_MENSUEL_USD) || 5;
 // traduire le plafond en un nombre de factures compréhensible à l'affichage
 // (jamais montré en dollars à l'utilisateur). Le blocage réel se base sur le
 // coût précis déjà consommé (suivi au token près), pas sur cette moyenne.
-export const COUT_MOYEN_PAR_FACTURE_USD = 0.0113;
+// 0,0113 $/facture était la moyenne observée sous Sonnet 5 ; divisée par deux
+// depuis le passage à Haiku 4.5 (deux fois moins cher au token).
+export const COUT_MOYEN_PAR_FACTURE_USD = 0.00565;
 
 /** Nombre de factures qu'il reste probablement possible d'analyser par IA ce mois-ci. */
 export function facturesRestantesEstimees(coutDejaConsommeUsd) {

@@ -4,7 +4,11 @@ import { HttpError } from "../../http.js";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
-const DEFAULT_MODEL = "claude-sonnet-5";
+// Haiku 4.5 plutôt que Sonnet 5 : moitié moins cher au token (1$/5$ vs 2$/10$
+// par million de tokens), pour doubler la capacité de factures analysables
+// sous le plafond mensuel — la relecture obligatoire avant enregistrement
+// couvre le risque d'une extraction un peu moins fiable qu'avec Sonnet.
+const DEFAULT_MODEL = "claude-haiku-4-5";
 
 const CATEGORIES = ["Transport", "Carburant", "Repas", "Hébergement", "Fournitures", "Autre"];
 
