@@ -14,6 +14,7 @@ import Confirmation from "./screens/Confirmation";
 import Export from "./screens/Export";
 import Reglages from "./screens/Reglages";
 import ModeleExcel from "./screens/ModeleExcel";
+import PolitiqueConfidentialite from "./screens/PolitiqueConfidentialite";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/connexion" element={<Connexion />} />
+            <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
 
             <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
               <Route path="/" element={<Accueil />} />
