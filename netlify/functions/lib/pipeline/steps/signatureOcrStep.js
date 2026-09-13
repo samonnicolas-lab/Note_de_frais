@@ -17,14 +17,14 @@
 // est toujours forcée à "faible" avec un avertissement explicite.
 import { listerSignatures, majUtilisationSignature } from "../../supabase/client.js";
 import { appliquerSignature } from "../../ocr/signature.js";
-import { normaliserTexte, motsSignificatifs } from "../../ocr/normaliser.js";
+import { normaliserTexte, motsSignificatifs, correspondanceMots } from "../../ocr/normaliser.js";
 import { avecDelai } from "../../util/timeout.js";
 
 // Un ticket de caisse thermique mal photographié donne souvent un OCR très
 // dégradé : le nom du fournisseur n'apparaît alors presque jamais tel quel
 // dans le texte (lettres manquantes/déformées). On compare donc sur les mots
-// significatifs présents plutôt que d'exiger le nom complet en une seule
-// sous-chaîne exacte.
+// significatifs présents (cf. correspondanceMots) plutôt que d'exiger le nom
+// complet en une seule sous-chaîne exacte.
 function trouverParNom(signatures, texteNorm) {
   const tokensTexte = motsSignificatifs(texteNorm);
   let meilleure = null;
@@ -32,16 +32,13 @@ function trouverParNom(signatures, texteNorm) {
   let meilleurRatio = 0;
   for (const sig of signatures) {
     if (!sig.fournisseur_normalise) continue;
-    const mots = [...motsSignificatifs(sig.fournisseur_normalise)];
-    if (mots.length === 0) continue;
-    const trouves = mots.filter((mot) => tokensTexte.has(mot)).length;
-    const ratio = trouves / mots.length;
-    if (ratio < 0.5) continue;
+    const { match, communs, ratio } = correspondanceMots(motsSignificatifs(sig.fournisseur_normalise), tokensTexte);
+    if (!match) continue;
     // Priorité au nombre de mots distinctifs retrouvés (preuve la plus forte),
     // départagé par le ratio si égalité.
-    if (trouves > meilleurTrouves || (trouves === meilleurTrouves && ratio > meilleurRatio)) {
+    if (communs > meilleurTrouves || (communs === meilleurTrouves && ratio > meilleurRatio)) {
       meilleure = sig;
-      meilleurTrouves = trouves;
+      meilleurTrouves = communs;
       meilleurRatio = ratio;
     }
   }
