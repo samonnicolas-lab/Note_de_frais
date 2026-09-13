@@ -4,6 +4,7 @@
 // aux fonctions serverless qui consomment cette API (addDepense/listDepenses...).
 import { v4 as uuidv4 } from "uuid";
 import { readRegistre, writeRegistre } from "../drive/driveClient.js";
+import { normaliserTexte } from "../ocr/normaliser.js";
 
 export const STATUT_VALIDEE = "validee";
 export const STATUT_EXPORTEE = "exportee";
@@ -108,15 +109,39 @@ export async function markMonthAsExported(drive, month) {
   await writeRegistre(drive, fileId, updated);
 }
 
+// Mots significatifs (>= 3 lettres) d'un nom de fournisseur, pour une comparaison
+// tolérante aux variantes de formulation entre deux extractions (OCR/Claude) d'un
+// même commerce, ex. "PRET (FRANCE) - Gare SNCF Rennes" vs "PRET (Gare SNCF, Rennes)".
+function motsSignificatifs(nom) {
+  return new Set(
+    normaliserTexte(nom)
+      .replace(/[^A-Z0-9 ]/g, " ")
+      .split(/\s+/)
+      .filter((mot) => mot.length >= 3)
+  );
+}
+
+/** Fournisseurs jugés identiques si au moins la moitié des mots significatifs du plus court sont communs. */
+function fournisseurSimilaire(a, b) {
+  const motsA = motsSignificatifs(a);
+  const motsB = motsSignificatifs(b);
+  if (motsA.size === 0 || motsB.size === 0) return false;
+  let communs = 0;
+  for (const mot of motsA) {
+    if (motsB.has(mot)) communs += 1;
+  }
+  return communs / Math.min(motsA.size, motsB.size) >= 0.5;
+}
+
 /**
  * Recherche une dépense déjà enregistrée qui semble être un doublon du justificatif
  * en cours de saisie : soit le fichier importé est strictement identique (empreinte),
- * soit fournisseur + date + montant TTC correspondent déjà à une dépense existante.
- * `excludeId` permet d'ignorer la dépense elle-même lors d'une modification.
+ * soit fournisseur (comparaison tolérante) + date + montant TTC correspondent déjà
+ * à une dépense existante. `excludeId` permet d'ignorer la dépense elle-même lors
+ * d'une modification.
  */
 export async function findDuplicate(drive, { date, fournisseur, montant_ttc, justificatif_hash }, excludeId = null) {
   const depenses = await listAllDepenses(drive);
-  const fournisseurNorm = (fournisseur || "").trim().toLowerCase();
 
   return (
     depenses.find((d) => {
@@ -124,10 +149,10 @@ export async function findDuplicate(drive, { date, fournisseur, montant_ttc, jus
       if (justificatif_hash && d.justificatif_hash && d.justificatif_hash === justificatif_hash) {
         return true;
       }
-      const memeFournisseur = (d.fournisseur || "").trim().toLowerCase() === fournisseurNorm;
+      const memeFournisseur = fournisseur && d.fournisseur && fournisseurSimilaire(d.fournisseur, fournisseur);
       const memeDate = d.date === date;
       const memeMontant = Math.abs(Number(d.montant_ttc) - Number(montant_ttc)) < 0.01;
-      return fournisseurNorm && memeFournisseur && memeDate && memeMontant;
+      return memeFournisseur && memeDate && memeMontant;
     }) || null
   );
 }
