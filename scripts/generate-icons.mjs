@@ -1,116 +1,116 @@
-// Génère des icônes PWA simples (PNG) sans dépendance externe : encodeur PNG minimal + dessin par pixels.
-import { deflateSync } from "node:zlib";
+// Génère les icônes PWA (note de frais : facture + pastille euro) avec
+// @napi-rs/canvas (déjà une dépendance du projet pour l'OCR/Phase 3).
+import { createCanvas } from "@napi-rs/canvas";
 import { writeFileSync, mkdirSync } from "node:fs";
 
-function crc32(buf) {
-  let c;
-  const table = crc32.table || (crc32.table = (() => {
-    const t = new Uint32Array(256);
-    for (let n = 0; n < 256; n++) {
-      c = n;
-      for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
-      t[n] = c >>> 0;
-    }
-    return t;
-  })());
-  let crc = 0xffffffff;
-  for (let i = 0; i < buf.length; i++) crc = table[(crc ^ buf[i]) & 0xff] ^ (crc >>> 8);
-  return (crc ^ 0xffffffff) >>> 0;
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }
 
-function chunk(type, data) {
-  const typeBuf = Buffer.from(type, "ascii");
-  const len = Buffer.alloc(4);
-  len.writeUInt32BE(data.length, 0);
-  const crcBuf = Buffer.alloc(4);
-  crcBuf.writeUInt32BE(crc32(Buffer.concat([typeBuf, data])), 0);
-  return Buffer.concat([len, typeBuf, data, crcBuf]);
-}
+function dessinerIcone(size, { maskable = false } = {}) {
+  const canvas = createCanvas(size, size);
+  const ctx = canvas.getContext("2d");
 
-function encodePNG(width, height, rgbaPixels) {
-  const sig = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]);
-  const ihdr = Buffer.alloc(13);
-  ihdr.writeUInt32BE(width, 0);
-  ihdr.writeUInt32BE(height, 4);
-  ihdr[8] = 8; // bit depth
-  ihdr[9] = 6; // color type RGBA
-  ihdr[10] = 0;
-  ihdr[11] = 0;
-  ihdr[12] = 0;
-
-  const stride = width * 4;
-  const raw = Buffer.alloc((stride + 1) * height);
-  for (let y = 0; y < height; y++) {
-    raw[y * (stride + 1)] = 0; // filter none
-    rgbaPixels.copy(raw, y * (stride + 1) + 1, y * stride, y * stride + stride);
-  }
-  const idat = deflateSync(raw);
-
-  return Buffer.concat([
-    sig,
-    chunk("IHDR", ihdr),
-    chunk("IDAT", idat),
-    chunk("IEND", Buffer.alloc(0)),
-  ]);
-}
-
-function makeIcon(size, { maskable = false } = {}) {
-  const px = Buffer.alloc(size * size * 4);
-  const bg = [37, 99, 235]; // bleu
-  const paper = [255, 255, 255];
-  const line = [37, 99, 235];
-  const coin = [253, 186, 61];
-
-  const set = (x, y, [r, g, b], a = 255) => {
-    if (x < 0 || y < 0 || x >= size || y >= size) return;
-    const i = (y * size + x) * 4;
-    px[i] = r; px[i + 1] = g; px[i + 2] = b; px[i + 3] = a;
-  };
-
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) set(x, y, bg);
+  // Fond bleu (coins arrondis pour les icônes non-maskable ; carré plein pour
+  // les maskable, dont le système applique lui-même le masque/l'arrondi).
+  const rayonFond = maskable ? 0 : size * 0.22;
+  const degrade = ctx.createLinearGradient(0, 0, size, size);
+  degrade.addColorStop(0, "#2f6fed");
+  degrade.addColorStop(1, "#1650c9");
+  ctx.fillStyle = degrade;
+  if (maskable) {
+    ctx.fillRect(0, 0, size, size);
+  } else {
+    roundRect(ctx, 0, 0, size, size, rayonFond);
+    ctx.fill();
   }
 
-  const margin = maskable ? size * 0.22 : size * 0.16;
-  const paperW = size - margin * 2;
-  const paperH = paperW * 1.28;
-  const px0 = margin;
-  const py0 = (size - paperH) / 2;
+  // Le contenu (facture + pastille) doit rester dans la zone sûre pour le maskable.
+  const echelle = maskable ? 0.72 : 1;
+  const decalage = (size * (1 - echelle)) / 2;
+  ctx.translate(decalage, decalage);
+  const s = size * echelle;
 
-  for (let y = 0; y < size; y++) {
-    for (let x = 0; x < size; x++) {
-      if (x >= px0 && x < px0 + paperW && y >= py0 && y < py0 + paperH) {
-        set(x, y, paper);
-      }
+  // Feuille de facture, coin supérieur droit replié, bas en dents de scie.
+  const px0 = s * 0.24;
+  const py0 = s * 0.24;
+  const largeur = s * 0.44;
+  const hauteur = s * 0.58;
+  const pli = s * 0.09;
+  const dents = 5;
+  const dentH = s * 0.045;
+
+  ctx.beginPath();
+  ctx.moveTo(px0, py0);
+  ctx.lineTo(px0 + largeur - pli, py0);
+  ctx.lineTo(px0 + largeur, py0 + pli);
+  ctx.lineTo(px0 + largeur, py0 + hauteur - dentH);
+  for (let i = 0; i < dents; i++) {
+    const xBase = px0 + largeur - (largeur / dents) * i;
+    const xMid = xBase - largeur / dents / 2;
+    ctx.lineTo(xMid, py0 + hauteur);
+    ctx.lineTo(xBase - largeur / dents, py0 + hauteur - dentH);
+  }
+  ctx.closePath();
+  ctx.fillStyle = "#ffffff";
+  ctx.fill();
+
+  // Coin replié (triangle bleu clair).
+  ctx.beginPath();
+  ctx.moveTo(px0 + largeur - pli, py0);
+  ctx.lineTo(px0 + largeur, py0 + pli);
+  ctx.lineTo(px0 + largeur - pli, py0 + pli);
+  ctx.closePath();
+  ctx.fillStyle = "#c7dbfb";
+  ctx.fill();
+
+  // Lignes de texte + symboles €.
+  const nbLignes = 4;
+  const ligneH = Math.max(2, s * 0.028);
+  const ligneLargeur = largeur * 0.56;
+  const ligneX = px0 + largeur * 0.1;
+  ctx.font = `700 ${Math.round(s * 0.09)}px sans-serif`;
+  ctx.fillStyle = "#33507a";
+  ctx.textBaseline = "middle";
+  for (let i = 0; i < nbLignes; i++) {
+    const ligneY = py0 + hauteur * (0.22 + i * 0.175);
+    const w = i === nbLignes - 1 ? ligneLargeur * 0.55 : ligneLargeur;
+    roundRect(ctx, ligneX, ligneY, w, ligneH, ligneH / 2);
+    ctx.fillStyle = "#7e93bd";
+    ctx.fill();
+    if (i < nbLignes - 1) {
+      ctx.fillStyle = "#33507a";
+      ctx.fillText("€", ligneX + ligneLargeur + s * 0.03, ligneY + ligneH / 2);
     }
   }
 
-  const lineH = Math.max(2, Math.round(size * 0.035));
-  const lineMargin = paperW * 0.18;
-  for (let li = 0; li < 4; li++) {
-    const ly = py0 + paperH * (0.22 + li * 0.16);
-    const lw = li === 3 ? paperW * 0.35 : paperW - lineMargin * 2;
-    for (let y = ly; y < ly + lineH; y++) {
-      for (let x = px0 + lineMargin; x < px0 + lineMargin + lw; x++) set(Math.round(x), Math.round(y), line);
-    }
-  }
+  // Pastille verte avec grand €, chevauchant le coin bas-droit de la feuille.
+  const rPastille = s * 0.24;
+  const cx = px0 + largeur * 0.92;
+  const cy = py0 + hauteur * 0.96;
+  ctx.beginPath();
+  ctx.arc(cx, cy, rPastille, 0, Math.PI * 2);
+  ctx.fillStyle = "#1fa15c";
+  ctx.fill();
+  ctx.font = `700 ${Math.round(rPastille * 1.5)}px sans-serif`;
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("€", cx, cy + rPastille * 0.06);
 
-  const cx = px0 + paperW * 0.72;
-  const cy = py0 + paperH * 0.82;
-  const r = paperW * 0.16;
-  for (let y = -r; y <= r; y++) {
-    for (let x = -r; x <= r; x++) {
-      if (x * x + y * y <= r * r) set(Math.round(cx + x), Math.round(cy + y), coin);
-    }
-  }
-
-  return encodePNG(size, size, px);
+  return canvas.toBuffer("image/png");
 }
 
 mkdirSync("public/icons", { recursive: true });
-writeFileSync("public/icons/icon-192.png", makeIcon(192));
-writeFileSync("public/icons/icon-512.png", makeIcon(512));
-writeFileSync("public/icons/icon-maskable-192.png", makeIcon(192, { maskable: true }));
-writeFileSync("public/icons/icon-maskable-512.png", makeIcon(512, { maskable: true }));
-writeFileSync("public/icons/apple-touch-icon.png", makeIcon(180, { maskable: true }));
+writeFileSync("public/icons/icon-192.png", dessinerIcone(192));
+writeFileSync("public/icons/icon-512.png", dessinerIcone(512));
+writeFileSync("public/icons/icon-maskable-192.png", dessinerIcone(192, { maskable: true }));
+writeFileSync("public/icons/icon-maskable-512.png", dessinerIcone(512, { maskable: true }));
+writeFileSync("public/icons/apple-touch-icon.png", dessinerIcone(180, { maskable: true }));
 console.log("Icônes générées dans public/icons/");
