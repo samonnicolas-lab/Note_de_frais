@@ -82,6 +82,10 @@ export default function Verification() {
         </div>
       )}
 
+      {extraction.avertissement && (
+        <div className="alert alert-warning">{extraction.avertissement}</div>
+      )}
+
       <form className="form" onSubmit={onSubmit}>
         <DepenseFieldsForm form={form} updateField={updateField} fieldClass={fieldClass} />
 
