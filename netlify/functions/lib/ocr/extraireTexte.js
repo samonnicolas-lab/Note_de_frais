@@ -1,4 +1,4 @@
-import { rasterizerPremierePage } from "./rasterizePdf.js";
+import { extraireTexteNatifPdf, rasterizerPremierePage } from "./pdf.js";
 import { reconnaitreTexte } from "./tesseract.js";
 import { redimensionnerSiBesoin } from "./redimensionner.js";
 
@@ -6,6 +6,16 @@ import { redimensionnerSiBesoin } from "./redimensionner.js";
 // canvas utilisé pour la rastérisation PDF : on saute directement l'OCR pour
 // ce format et on part sur Claude, plutôt que de risquer un échec silencieux.
 const TYPES_NON_SUPPORTES = new Set(["image/heic"]);
+
+// Seuil pour juger qu'un texte extrait nativement d'un PDF est un vrai calque
+// de texte exploitable (facture générée numériquement, ou photo scannée par
+// une appli qui embarque son propre OCR) et non un PDF composé d'une simple
+// image scannée sans texte (juste un artefact/watermark isolé, par exemple).
+function texteEstSubstantiel(texte) {
+  if (!texte) return false;
+  const mots = texte.trim().split(/\s+/).filter((m) => m.length >= 2);
+  return texte.trim().length >= 50 && mots.length >= 8;
+}
 
 /** @returns {Promise<string|null>} texte OCR brut, ou `null` si le format n'est pas géré. */
 export async function extraireTexteOcr(base64Data, mimeType) {
@@ -15,9 +25,19 @@ export async function extraireTexteOcr(base64Data, mimeType) {
 
   console.log(`[OCR] début, mimeType=${mimeType}, taille=${buffer.length} octets`);
 
-  let image = buffer;
   if (mimeType === "application/pdf") {
-    image = await rasterizerPremierePage(buffer);
+    const texteNatif = await extraireTexteNatifPdf(buffer);
+    if (texteEstSubstantiel(texteNatif)) {
+      console.log(
+        `[OCR] texte natif du PDF utilisé directement (${texteNatif.length} caractères, ${Date.now() - t0} ms) : OCR non nécessaire.`
+      );
+      return texteNatif;
+    }
+    console.log(`[OCR] pas de texte natif exploitable dans le PDF, rastérisation puis OCR (${Date.now() - t0} ms).`);
+  }
+
+  const image = mimeType === "application/pdf" ? await rasterizerPremierePage(buffer) : buffer;
+  if (mimeType === "application/pdf") {
     console.log(`[OCR] rastérisation PDF terminée en ${Date.now() - t0} ms`);
   }
 
