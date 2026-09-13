@@ -7,9 +7,13 @@ export default function Confirmation() {
   const navigate = useNavigate();
   const { depenseEnregistree, reset } = useScan();
 
-  // Redirection en effet (pas pendant le rendu) : sinon un reset() du contexte
-  // juste avant un navigate() ailleurs entre en concurrence avec cette redirection
-  // et peut faire "gagner" /scanner au lieu de la destination cliquée.
+  // Ce garde protège un accès direct à /confirmation sans dépense fraîchement
+  // enregistrée (ex: retour navigateur). Le bouton "Voir mes dépenses" ne fait
+  // volontairement PAS de reset() avant de naviguer : un reset() synchrone ici
+  // faisait déjà retomber sur /scanner via ce garde (course entre la mise à
+  // jour du contexte et la navigation vers "/") — startScan() réinitialise de
+  // toute façon l'état au prochain vrai scan, un reset() immédiat était donc
+  // inutile sur ce bouton précis.
   useEffect(() => {
     if (!depenseEnregistree) {
       navigate("/scanner", { replace: true });
@@ -61,10 +65,7 @@ export default function Confirmation() {
           <button
             type="button"
             className="btn btn-secondary btn-block"
-            onClick={() => {
-              reset();
-              navigate("/");
-            }}
+            onClick={() => navigate("/")}
           >
             Voir mes dépenses
           </button>
