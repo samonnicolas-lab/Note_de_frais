@@ -1,7 +1,8 @@
 import { json, error, withErrorHandling, HttpError } from "./lib/http.js";
 import { requireDriveClient } from "./lib/auth/session.js";
 import { runExtractionPipeline } from "./lib/pipeline/index.js";
-import { recordUsage } from "./lib/usage/index.js";
+import { recordUsage, getUsageForMonth } from "./lib/usage/index.js";
+import { plafondMensuelAtteint } from "./lib/usage/pricing.js";
 import { construireSignature, signatureExploitable } from "./lib/ocr/signature.js";
 import { normaliserFournisseur, fournisseurSimilaire } from "./lib/ocr/normaliser.js";
 import { listerSignatures, upsertSignature } from "./lib/supabase/client.js";
@@ -31,7 +32,21 @@ export default async (request) => {
       throw new HttpError(413, "Fichier trop volumineux. Merci de réessayer avec une photo compressée (< 4 Mo).");
     }
 
-    const { extraction, usage, ocrText } = await runExtractionPipeline({ base64Data: fileBase64, mimeType });
+    // Plafond mensuel de dépense IA (partagé par tous les utilisateurs, une
+    // seule clé API) : vérifié AVANT le pipeline pour ne jamais déclencher
+    // l'appel Claude une fois atteint. La reconnaissance par signature (gratuite)
+    // n'est pas concernée et continue de fonctionner normalement au-delà.
+    const usageActuel = await getUsageForMonth(drive).catch((err) => {
+      console.error("Impossible de lire le compteur d'usage IA (plafond non vérifié) :", err.message);
+      return null;
+    });
+    const plafondAtteint = usageActuel ? plafondMensuelAtteint(usageActuel.cout_estime_usd) : false;
+
+    const { extraction, usage, ocrText } = await runExtractionPipeline({
+      base64Data: fileBase64,
+      mimeType,
+      plafondAtteint,
+    });
 
     if (usage) {
       // Le compteur d'usage ne doit jamais faire échouer la réponse à l'utilisateur :

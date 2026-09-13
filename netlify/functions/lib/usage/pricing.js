@@ -17,3 +17,27 @@ export function estimateCostUSD({ model, inputTokens, outputTokens }) {
     (Number(outputTokens) || 0) * (pricing.output / 1_000_000)
   );
 }
+
+// Plafond de dépense mensuelle appliqué à l'ensemble des utilisateurs de
+// l'application (une seule clé API Anthropic, partagée) — au-delà, l'analyse
+// par IA est suspendue jusqu'au mois suivant. Les fournisseurs déjà appris
+// via signature (Phase 3) continuent de fonctionner normalement, sans passer
+// par l'IA : seul le repli Claude est concerné par ce plafond.
+export const PLAFOND_MENSUEL_USD = Number(process.env.PLAFOND_MENSUEL_USD) || 5;
+
+// Coût moyen observé par facture analysée par l'IA, utilisé uniquement pour
+// traduire le plafond en un nombre de factures compréhensible à l'affichage
+// (jamais montré en dollars à l'utilisateur). Le blocage réel se base sur le
+// coût précis déjà consommé (suivi au token près), pas sur cette moyenne.
+export const COUT_MOYEN_PAR_FACTURE_USD = 0.0113;
+
+/** Nombre de factures qu'il reste probablement possible d'analyser par IA ce mois-ci. */
+export function facturesRestantesEstimees(coutDejaConsommeUsd) {
+  const budgetRestant = PLAFOND_MENSUEL_USD - (Number(coutDejaConsommeUsd) || 0);
+  return Math.max(0, Math.floor(budgetRestant / COUT_MOYEN_PAR_FACTURE_USD));
+}
+
+/** Le plafond mensuel de dépense IA est-il déjà atteint ? */
+export function plafondMensuelAtteint(coutDejaConsommeUsd) {
+  return (Number(coutDejaConsommeUsd) || 0) >= PLAFOND_MENSUEL_USD;
+}

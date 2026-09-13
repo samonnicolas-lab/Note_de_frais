@@ -1,6 +1,7 @@
 import { json, withErrorHandling, HttpError } from "./lib/http.js";
 import { requireDriveClient } from "./lib/auth/session.js";
 import { getUsageForMonth } from "./lib/usage/index.js";
+import { facturesRestantesEstimees, plafondMensuelAtteint } from "./lib/usage/pricing.js";
 
 export default async (request) => {
   return withErrorHandling(async () => {
@@ -16,6 +17,10 @@ export default async (request) => {
     }
 
     const usage = month ? await getUsageForMonth(drive, month) : await getUsageForMonth(drive);
-    return json(200, usage);
+    return json(200, {
+      ...usage,
+      factures_restantes_estimees: facturesRestantesEstimees(usage.cout_estime_usd),
+      plafond_atteint: plafondMensuelAtteint(usage.cout_estime_usd),
+    });
   });
 };

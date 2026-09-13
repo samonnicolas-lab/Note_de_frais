@@ -1,5 +1,7 @@
 // Étape du pipeline d'extraction : appel à l'API Claude (vision) pour lire une
 // facture/ticket (image ou PDF) et en extraire les champs structurés.
+import { HttpError } from "../../http.js";
+
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
 const DEFAULT_MODEL = "claude-sonnet-5";
@@ -66,10 +68,18 @@ function buildContentBlock(base64Data, mimeType) {
 }
 
 /**
- * @param {{ base64Data: string, mimeType: string }} input
+ * @param {{ base64Data: string, mimeType: string, plafondAtteint?: boolean }} input
  * @returns {Promise<object>} JSON structuré conforme au schéma du cahier des charges §3.
  */
-export async function claudeVisionStep({ base64Data, mimeType }) {
+export async function claudeVisionStep({ base64Data, mimeType, plafondAtteint }) {
+  if (plafondAtteint) {
+    throw new HttpError(
+      429,
+      "Le plafond mensuel d'analyse par IA est atteint pour ce mois. Les fournisseurs déjà reconnus " +
+        "automatiquement continuent de fonctionner ; les nouveaux justificatifs devront être saisis " +
+        "manuellement jusqu'au mois prochain."
+    );
+  }
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error("ANTHROPIC_API_KEY n'est pas configuré côté serveur.");
