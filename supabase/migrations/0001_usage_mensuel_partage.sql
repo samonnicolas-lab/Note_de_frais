@@ -44,3 +44,10 @@ begin
   return resultat;
 end;
 $$;
+
+-- Sur ce projet, une table/fonction nouvellement créée via l'éditeur SQL
+-- n'est pas automatiquement accessible au rôle service_role (contrairement à
+-- ce que ferait l'éditeur de tables) : accès explicite requis. service_role
+-- contourne déjà RLS (bypassrls), ceci ne fait qu'autoriser l'accès à la table.
+grant select on usage_mensuel to service_role;
+grant execute on function incrementer_usage_mensuel(text, bigint, bigint, numeric) to service_role;
