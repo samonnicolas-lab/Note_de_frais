@@ -596,9 +596,14 @@ a {
   border-radius: 10px;
   padding: 11px 12px;
   font-size: 1rem;
+  font-family: inherit;
   color: var(--color-text);
   background: var(--color-surface);
   width: 100%;
+}
+
+textarea.field-input {
+  resize: vertical;
 }
 
 .field-input:focus {

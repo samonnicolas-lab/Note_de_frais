@@ -77,6 +77,8 @@ export async function generateFromTemplate(templateBuffer, mapping, ligneEntete,
     if (mapping.date) row.getCell(mapping.date).value = d.date;
     if (mapping.fournisseur) row.getCell(mapping.fournisseur).value = d.fournisseur;
     if (mapping.categorie) row.getCell(mapping.categorie).value = d.categorie;
+    if (mapping.description) row.getCell(mapping.description).value = d.description || "";
+    if (mapping.invites) row.getCell(mapping.invites).value = d.invites || "";
     if (mapping.montant_ht) {
       const cell = row.getCell(mapping.montant_ht);
       cell.value = Number(d.montant_ht) || 0;

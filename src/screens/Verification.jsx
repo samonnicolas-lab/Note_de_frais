@@ -32,6 +32,8 @@ export default function Verification() {
       date: form.date,
       fournisseur: form.fournisseur,
       categorie: form.categorie,
+      description: form.description,
+      invites: form.invites,
       montant_ht: Number(form.montant_ht),
       montant_ttc: Number(form.montant_ttc),
       tva: form.tva

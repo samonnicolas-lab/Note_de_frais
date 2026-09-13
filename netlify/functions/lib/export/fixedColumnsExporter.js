@@ -8,9 +8,11 @@ const COLUMNS = [
   { header: "Date", width: 14 },
   { header: "Fournisseur", width: 28 },
   { header: "Catégorie", width: 16 },
+  { header: "Description", width: 32 },
   { header: "Montant HT", width: 14 },
   { header: "TVA", width: 22 },
   { header: "Montant TTC", width: 14 },
+  { header: "Personnes invitées", width: 28 },
   { header: "Lien justificatif Drive", width: 40 },
 ];
 const NB_COLONNES = COLUMNS.length;
@@ -95,13 +97,15 @@ export async function generateFixedColumnsWorkbook(depenses, month, profil = {})
     row.getCell(1).value = d.date;
     row.getCell(2).value = d.fournisseur;
     row.getCell(3).value = d.categorie;
-    row.getCell(4).value = Number(d.montant_ht) || 0;
-    row.getCell(4).numFmt = "#,##0.00 €";
-    row.getCell(5).value = formatTva(d.tva);
-    row.getCell(6).value = Number(d.montant_ttc) || 0;
-    row.getCell(6).numFmt = "#,##0.00 €";
+    row.getCell(4).value = d.description || "";
+    row.getCell(5).value = Number(d.montant_ht) || 0;
+    row.getCell(5).numFmt = "#,##0.00 €";
+    row.getCell(6).value = formatTva(d.tva);
+    row.getCell(7).value = Number(d.montant_ttc) || 0;
+    row.getCell(7).numFmt = "#,##0.00 €";
+    row.getCell(8).value = d.invites || "";
     if (d.justificatif_drive_url) {
-      row.getCell(7).value = { text: d.justificatif_drive_url, hyperlink: d.justificatif_drive_url };
+      row.getCell(9).value = { text: d.justificatif_drive_url, hyperlink: d.justificatif_drive_url };
     }
   });
 
@@ -109,14 +113,14 @@ export async function generateFixedColumnsWorkbook(depenses, month, profil = {})
   const ligneTotal = derniereLigneDonnees + 1;
   const totalRow = sheet.getRow(ligneTotal);
   totalRow.getCell(3).value = "Total";
-  totalRow.getCell(4).value = { formula: `SUM(D${premiereLigneDonnees}:D${derniereLigneDonnees})` };
-  totalRow.getCell(4).numFmt = "#,##0.00 €";
+  totalRow.getCell(5).value = { formula: `SUM(E${premiereLigneDonnees}:E${derniereLigneDonnees})` };
+  totalRow.getCell(5).numFmt = "#,##0.00 €";
   // Le détail TVA par ligne est un texte formaté, non sommable par une formule
   // Excel : le total TVA est donc calculé côté serveur, sur cette même ligne.
-  totalRow.getCell(5).value = totalTvaMontant(sorted);
-  totalRow.getCell(5).numFmt = "#,##0.00 €";
-  totalRow.getCell(6).value = { formula: `SUM(F${premiereLigneDonnees}:F${derniereLigneDonnees})` };
+  totalRow.getCell(6).value = totalTvaMontant(sorted);
   totalRow.getCell(6).numFmt = "#,##0.00 €";
+  totalRow.getCell(7).value = { formula: `SUM(G${premiereLigneDonnees}:G${derniereLigneDonnees})` };
+  totalRow.getCell(7).numFmt = "#,##0.00 €";
   totalRow.font = { bold: true };
 
   return workbook;

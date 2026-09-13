@@ -8,13 +8,24 @@ import JustificatifPreview from "../components/JustificatifPreview";
 import ConfirmDialog from "../components/ConfirmDialog";
 import Spinner from "../components/Spinner";
 
-const EMPTY_FORM = { date: "", fournisseur: "", categorie: "Autre", montant_ht: "", montant_ttc: "", tva: [] };
+const EMPTY_FORM = {
+  date: "",
+  fournisseur: "",
+  categorie: "Autre",
+  description: "",
+  invites: "",
+  montant_ht: "",
+  montant_ttc: "",
+  tva: [],
+};
 
 function depenseVersForm(depense) {
   return {
     date: depense.date || "",
     fournisseur: depense.fournisseur || "",
     categorie: depense.categorie || "Autre",
+    description: depense.description || "",
+    invites: depense.invites || "",
     montant_ht: depense.montant_ht ?? "",
     montant_ttc: depense.montant_ttc ?? "",
     tva: Array.isArray(depense.tva) ? depense.tva : [],
@@ -82,6 +93,8 @@ export default function DetailDepense() {
           date: form.date,
           fournisseur: form.fournisseur,
           categorie: form.categorie,
+          description: form.description,
+          invites: form.invites,
           montant_ht: Number(form.montant_ht),
           montant_ttc: Number(form.montant_ttc),
           tva: form.tva

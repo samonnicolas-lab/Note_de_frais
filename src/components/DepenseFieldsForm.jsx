@@ -55,6 +55,32 @@ export default function DepenseFieldsForm({ form, updateField, fieldClass = "fie
         </select>
       </label>
 
+      <label className="field">
+        <span>Description (optionnel)</span>
+        <textarea
+          className={fieldClass}
+          rows={2}
+          placeholder="Ex : déjeuner avec un client, mission à Lyon..."
+          value={form.description}
+          onChange={(e) => updateField("description", e.target.value)}
+          disabled={disabled}
+        />
+      </label>
+
+      {form.categorie === "Invitation client" && (
+        <label className="field">
+          <span>Personnes invitées</span>
+          <textarea
+            className={fieldClass}
+            rows={2}
+            placeholder="Noms des personnes invitées (client, collègues...)"
+            value={form.invites}
+            onChange={(e) => updateField("invites", e.target.value)}
+            disabled={disabled}
+          />
+        </label>
+      )}
+
       <div className="field-row">
         <label className="field">
           <span>Montant HT</span>

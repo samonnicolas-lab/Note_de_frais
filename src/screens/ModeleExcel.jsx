@@ -8,9 +8,11 @@ const CHAMPS = [
   { cle: "date", label: "Date" },
   { cle: "fournisseur", label: "Fournisseur" },
   { cle: "categorie", label: "Catégorie" },
+  { cle: "description", label: "Description" },
   { cle: "montant_ht", label: "Montant HT" },
   { cle: "tva", label: "TVA" },
   { cle: "montant_ttc", label: "Montant TTC" },
+  { cle: "invites", label: "Personnes invitées" },
   { cle: "lien_justificatif", label: "Lien justificatif Drive" },
 ];
 
@@ -31,10 +33,12 @@ const MOTS_CLES = {
   date: /date/i,
   fournisseur: /fournisseur|b[ée]n[ée]ficiaire|nom|soci[ée]t[ée]|entreprise|payeur/i,
   categorie: /cat[ée]gorie|nature|type/i,
+  description: /description|libell[ée]|motif|objet|commentaire/i,
   montant_ht: /\bht\b|hors.?taxe/i,
   tva: /tva/i,
   montant_ttc: /ttc|total/i,
   lien_justificatif: /justificatif|pi[èe]ce|lien|drive|url/i,
+  invites: /invit[ée]s?|convives?/i,
 };
 
 function suggererMapping(colonnes) {

@@ -55,6 +55,8 @@ export default async (request) => {
       date: depense.date,
       fournisseur: depense.fournisseur,
       categorie: depense.categorie,
+      description: depense.description || "",
+      invites: depense.invites || "",
       montant_ht: Number(depense.montant_ht),
       montant_ttc: Number(depense.montant_ttc),
       tva: Array.isArray(depense.tva) ? depense.tva : [],

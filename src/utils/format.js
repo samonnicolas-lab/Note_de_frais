@@ -1,4 +1,16 @@
-export const CATEGORIES = ["Transport", "Carburant", "Repas", "Hébergement", "Fournitures", "Autre"];
+// "Invitation client" est volontairement absente de la liste utilisée par
+// Claude (cf. claudeVisionStep.js) : cette catégorie doit toujours être
+// choisie manuellement par l'utilisateur, jamais déduite automatiquement
+// d'un justificatif (demande explicite).
+export const CATEGORIES = [
+  "Transport",
+  "Carburant",
+  "Repas",
+  "Invitation client",
+  "Hébergement",
+  "Fournitures",
+  "Autre",
+];
 
 export function currentMonth() {
   const now = new Date();
