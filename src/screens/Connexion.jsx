@@ -28,7 +28,7 @@ export default function Connexion() {
           L'application ne demande accès qu'aux fichiers qu'elle crée elle-même sur votre Drive.
         </p>
         <p className="text-muted text-small">
-          <a href="/politique-confidentialite">Politique de confidentialité</a>
+          <a href="/bienvenue">En savoir plus</a> · <a href="/politique-confidentialite">Politique de confidentialité</a>
         </p>
       </div>
     </div>

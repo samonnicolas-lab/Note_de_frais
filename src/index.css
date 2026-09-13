@@ -299,6 +299,40 @@ a {
   gap: 8px;
 }
 
+.bienvenue-card {
+  max-width: 440px;
+}
+
+.bienvenue-etapes,
+.bienvenue-points {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 8px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  text-align: left;
+}
+
+.bienvenue-etape,
+.bienvenue-point {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.bienvenue-etape-emoji,
+.bienvenue-point > span {
+  font-size: 1.3rem;
+  flex: none;
+  line-height: 1.3;
+}
+
+.bienvenue-etape p,
+.bienvenue-point p {
+  margin: 2px 0 0;
+}
+
 .usage-stats {
   display: flex;
   gap: 12px;

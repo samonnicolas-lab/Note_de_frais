@@ -15,6 +15,7 @@ import Export from "./screens/Export";
 import Reglages from "./screens/Reglages";
 import ModeleExcel from "./screens/ModeleExcel";
 import PolitiqueConfidentialite from "./screens/PolitiqueConfidentialite";
+import Bienvenue from "./screens/Bienvenue";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
       <ScanProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="/bienvenue" element={<Bienvenue />} />
             <Route path="/connexion" element={<Connexion />} />
             <Route path="/politique-confidentialite" element={<PolitiqueConfidentialite />} />
 
