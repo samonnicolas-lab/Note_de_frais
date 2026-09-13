@@ -1,4 +1,4 @@
-export const CATEGORIES = ["Transport", "Repas", "Hébergement", "Fournitures", "Autre"];
+export const CATEGORIES = ["Transport", "Carburant", "Repas", "Hébergement", "Fournitures", "Autre"];
 
 export function currentMonth() {
   const now = new Date();

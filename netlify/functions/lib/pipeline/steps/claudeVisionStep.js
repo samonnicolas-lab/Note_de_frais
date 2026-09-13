@@ -4,7 +4,7 @@ const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
 const DEFAULT_MODEL = "claude-sonnet-5";
 
-const CATEGORIES = ["Transport", "Repas", "Hébergement", "Fournitures", "Autre"];
+const CATEGORIES = ["Transport", "Carburant", "Repas", "Hébergement", "Fournitures", "Autre"];
 
 const EXTRACT_TOOL = {
   name: "extraire_facture",
@@ -49,7 +49,9 @@ Règles :
   français jour/mois/année (JJ/MM/AA), jamais au format anglo-saxon mois/jour/année,
   y compris pour un document étranger si le format d'origine n'est pas explicite.
 - Si le document est en devise étrangère, indique quand même les montants numériques tels qu'imprimés.
-- Choisis la catégorie la plus proche parmi : Transport, Repas, Hébergement, Fournitures, Autre.
+- Choisis la catégorie la plus proche parmi : Transport, Carburant, Repas, Hébergement, Fournitures, Autre.
+  "Carburant" est réservé aux achats d'essence/gazole/recharge électrique (stations-service) ;
+  "Transport" couvre le reste (péage, parking, billets de train/avion, taxi...).
 - Si la TVA n'est pas détaillée par taux, mets un tableau avec un seul taux global si déductible, sinon un tableau vide.
 - Le champ "confiance" doit refléter honnêtement ta certitude : "faible" si le document est flou,
   partiellement coupé, ou si tu dois deviner une valeur ; "moyenne" en cas de doute partiel ; "haute"
