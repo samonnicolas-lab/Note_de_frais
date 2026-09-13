@@ -5,7 +5,12 @@
 // le plus direct pour tenir dans le budget de temps d'une fonction Netlify.
 import { createCanvas, loadImage } from "@napi-rs/canvas";
 
-const LARGEUR_MAX = 1800;
+// Constaté en prod (logs [OCR]) : une vraie photo de facture déjà sous 1800px
+// (compression côté client) prend quand même plus de 6s à reconnaître sur le
+// CPU alloué par Netlify — 1800px est encore trop pour ce budget. Le temps de
+// traitement de Tesseract croît avec le nombre de pixels (environ au carré de
+// la largeur) : redescendre à 1400px devrait réduire la charge d'environ 40%.
+const LARGEUR_MAX = 1400;
 
 /** @param {Buffer} image @returns {Promise<Buffer>} PNG redimensionné si besoin. */
 export async function redimensionnerSiBesoin(image, largeurMax = LARGEUR_MAX) {

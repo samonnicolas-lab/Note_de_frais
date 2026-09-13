@@ -18,7 +18,7 @@ const PIPELINE_STEPS = [signatureOcrStep, claudeVisionStep];
 // (premier chargement du moteur OCR), ce budget peut ne pas suffire — c'est
 // sans risque : le pipeline retombe alors simplement sur Claude. Réglable
 // sans redéploiement via la variable d'environnement Netlify OCR_TIMEOUT_MS.
-const OCR_TIMEOUT_MS = Number(process.env.OCR_TIMEOUT_MS) || 8000;
+const OCR_TIMEOUT_MS = Number(process.env.OCR_TIMEOUT_MS) || 11000;
 
 function avecDelai(promesse, ms) {
   return Promise.race([
