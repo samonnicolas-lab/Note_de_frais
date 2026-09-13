@@ -25,12 +25,14 @@ async function requeteSupabase(path, options = {}) {
       ...(options.headers || {}),
     },
   });
+  const texte = await res.text();
   if (!res.ok) {
-    const texte = await res.text().catch(() => "");
     throw new Error(`Erreur Supabase (${res.status}) : ${texte.slice(0, 300)}`);
   }
-  if (res.status === 204) return null;
-  return res.json();
+  // PostgREST renvoie un corps vide par défaut sur POST/PATCH/DELETE (sauf
+  // "Prefer: return=representation") : res.json() plantait alors avec
+  // "Unexpected end of JSON input".
+  return texte ? JSON.parse(texte) : null;
 }
 
 /** Liste les signatures connues (table de petite taille : quelques dizaines/centaines de fournisseurs). */

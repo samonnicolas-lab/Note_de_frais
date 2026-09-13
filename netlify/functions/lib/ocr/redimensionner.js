@@ -24,5 +24,9 @@ export async function redimensionnerSiBesoin(image, largeurMax = LARGEUR_MAX) {
   const canvas = createCanvas(largeur, hauteur);
   const context = canvas.getContext("2d");
   context.drawImage(source, 0, 0, largeur, hauteur);
-  return canvas.toBuffer("image/png");
+  // JPEG et non PNG : constaté en prod, ré-encoder une photo en PNG (sans
+  // perte) est à la fois plus lent à produire et donne un fichier plus gros
+  // qu'en JPEG (1,24 Mo d'origine -> 4,15 Mo en PNG après redimensionnement),
+  // ce qui a fait passer le redimensionnement de ~0,2s à ~1,9s.
+  return canvas.toBuffer("image/jpeg", 0.85);
 }
