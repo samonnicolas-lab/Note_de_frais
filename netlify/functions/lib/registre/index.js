@@ -4,7 +4,7 @@
 // aux fonctions serverless qui consomment cette API (addDepense/listDepenses...).
 import { v4 as uuidv4 } from "uuid";
 import { readRegistre, writeRegistre } from "../drive/driveClient.js";
-import { normaliserTexte } from "../ocr/normaliser.js";
+import { fournisseurSimilaire } from "../ocr/normaliser.js";
 
 export const STATUT_VALIDEE = "validee";
 export const STATUT_EXPORTEE = "exportee";
@@ -107,30 +107,6 @@ export async function markMonthAsExported(drive, month) {
     typeof d.date === "string" && d.date.startsWith(month) ? { ...d, statut: STATUT_EXPORTEE } : d
   );
   await writeRegistre(drive, fileId, updated);
-}
-
-// Mots significatifs (>= 3 lettres) d'un nom de fournisseur, pour une comparaison
-// tolérante aux variantes de formulation entre deux extractions (OCR/Claude) d'un
-// même commerce, ex. "PRET (FRANCE) - Gare SNCF Rennes" vs "PRET (Gare SNCF, Rennes)".
-function motsSignificatifs(nom) {
-  return new Set(
-    normaliserTexte(nom)
-      .replace(/[^A-Z0-9 ]/g, " ")
-      .split(/\s+/)
-      .filter((mot) => mot.length >= 3)
-  );
-}
-
-/** Fournisseurs jugés identiques si au moins la moitié des mots significatifs du plus court sont communs. */
-function fournisseurSimilaire(a, b) {
-  const motsA = motsSignificatifs(a);
-  const motsB = motsSignificatifs(b);
-  if (motsA.size === 0 || motsB.size === 0) return false;
-  let communs = 0;
-  for (const mot of motsA) {
-    if (motsB.has(mot)) communs += 1;
-  }
-  return communs / Math.min(motsA.size, motsB.size) >= 0.5;
 }
 
 /**

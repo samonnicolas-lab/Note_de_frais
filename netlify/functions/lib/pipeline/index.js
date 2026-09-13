@@ -5,6 +5,7 @@
 import { claudeVisionStep } from "./steps/claudeVisionStep.js";
 import { signatureOcrStep } from "./steps/signatureOcrStep.js";
 import { extraireTexteOcr } from "../ocr/extraireTexte.js";
+import { avecDelai } from "../util/timeout.js";
 
 // Ordre d'exécution : chaque étape peut renvoyer `{ extraction, usage }` (auquel
 // cas le pipeline s'arrête là — `usage` vaut `null` pour une étape qui ne fait pas
@@ -20,17 +21,10 @@ const PIPELINE_STEPS = [signatureOcrStep, claudeVisionStep];
 // sans redéploiement via la variable d'environnement Netlify OCR_TIMEOUT_MS.
 const OCR_TIMEOUT_MS = Number(process.env.OCR_TIMEOUT_MS) || 11000;
 
-function avecDelai(promesse, ms) {
-  return Promise.race([
-    promesse,
-    new Promise((_, reject) => setTimeout(() => reject(new Error("Délai OCR dépassé")), ms)),
-  ]);
-}
-
 /** Ne doit jamais lever d'exception : un échec OCR se traduit juste par un repli sur Claude. */
 async function calculerTexteOcrSansExploser({ base64Data, mimeType }) {
   try {
-    return await avecDelai(extraireTexteOcr(base64Data, mimeType), OCR_TIMEOUT_MS);
+    return await avecDelai(extraireTexteOcr(base64Data, mimeType), OCR_TIMEOUT_MS, "Délai OCR dépassé");
   } catch (err) {
     console.error("OCR indisponible, repli sur Claude :", err.message);
     return null;

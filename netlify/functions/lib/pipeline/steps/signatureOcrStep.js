@@ -17,26 +17,49 @@
 // est toujours forcée à "faible" avec un avertissement explicite.
 import { listerSignatures, majUtilisationSignature } from "../../supabase/client.js";
 import { appliquerSignature } from "../../ocr/signature.js";
-import { normaliserTexte } from "../../ocr/normaliser.js";
+import { normaliserTexte, motsSignificatifs } from "../../ocr/normaliser.js";
+import { avecDelai } from "../../util/timeout.js";
 
+// Un ticket de caisse thermique mal photographié donne souvent un OCR très
+// dégradé : le nom du fournisseur n'apparaît alors presque jamais tel quel
+// dans le texte (lettres manquantes/déformées). On compare donc sur les mots
+// significatifs présents plutôt que d'exiger le nom complet en une seule
+// sous-chaîne exacte.
 function trouverParNom(signatures, texteNorm) {
+  const tokensTexte = motsSignificatifs(texteNorm);
   let meilleure = null;
+  let meilleurTrouves = 0;
+  let meilleurRatio = 0;
   for (const sig of signatures) {
-    if (sig.fournisseur_normalise && texteNorm.includes(sig.fournisseur_normalise)) {
-      if (!meilleure || sig.fournisseur_normalise.length > meilleure.fournisseur_normalise.length) {
-        meilleure = sig;
-      }
+    if (!sig.fournisseur_normalise) continue;
+    const mots = [...motsSignificatifs(sig.fournisseur_normalise)];
+    if (mots.length === 0) continue;
+    const trouves = mots.filter((mot) => tokensTexte.has(mot)).length;
+    const ratio = trouves / mots.length;
+    if (ratio < 0.5) continue;
+    // Priorité au nombre de mots distinctifs retrouvés (preuve la plus forte),
+    // départagé par le ratio si égalité.
+    if (trouves > meilleurTrouves || (trouves === meilleurTrouves && ratio > meilleurRatio)) {
+      meilleure = sig;
+      meilleurTrouves = trouves;
+      meilleurRatio = ratio;
     }
   }
   return meilleure;
 }
+
+// Budget court : cette étape ne doit jamais faire traîner toute la requête si
+// Supabase répond lentement (constaté en prod : un 504 Gateway Timeout a fait
+// gonfler la durée totale de plusieurs secondes) — un repli sur Claude reste
+// toujours possible et rapide.
+const SUPABASE_TIMEOUT_MS = 4000;
 
 export async function signatureOcrStep({ ocrText }) {
   if (!ocrText) return null;
 
   let signatures;
   try {
-    signatures = await listerSignatures();
+    signatures = await avecDelai(listerSignatures(), SUPABASE_TIMEOUT_MS, "Délai Supabase dépassé");
   } catch (err) {
     console.error("Supabase indisponible pour la reconnaissance de signature, repli sur Claude :", err.message);
     return null;
