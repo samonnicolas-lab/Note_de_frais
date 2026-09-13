@@ -45,6 +45,9 @@ pour de la gestion de notes de frais professionnelles. Analyse le document fourn
 appelle l'outil "extraire_facture" avec les informations trouvées.
 
 Règles :
+- Pour une date numérique ambiguë (ex: 06/09/26), interprète-la TOUJOURS au format
+  français jour/mois/année (JJ/MM/AA), jamais au format anglo-saxon mois/jour/année,
+  y compris pour un document étranger si le format d'origine n'est pas explicite.
 - Si le document est en devise étrangère, indique quand même les montants numériques tels qu'imprimés.
 - Choisis la catégorie la plus proche parmi : Transport, Repas, Hébergement, Fournitures, Autre.
 - Si la TVA n'est pas détaillée par taux, mets un tableau avec un seul taux global si déductible, sinon un tableau vide.
