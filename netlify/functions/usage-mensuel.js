@@ -8,7 +8,7 @@ export default async (request) => {
     if (request.method !== "GET") {
       return json(405, { error: "Méthode non autorisée." });
     }
-    const { drive } = requireDriveClient(request);
+    requireDriveClient(request);
 
     const url = new URL(request.url);
     const month = url.searchParams.get("month");
@@ -16,7 +16,7 @@ export default async (request) => {
       throw new HttpError(400, "Le paramètre 'month' doit être au format YYYY-MM.");
     }
 
-    const usage = month ? await getUsageForMonth(drive, month) : await getUsageForMonth(drive);
+    const usage = month ? await getUsageForMonth(month) : await getUsageForMonth();
     return json(200, {
       ...usage,
       factures_restantes_estimees: facturesRestantesEstimees(usage.cout_estime_usd),

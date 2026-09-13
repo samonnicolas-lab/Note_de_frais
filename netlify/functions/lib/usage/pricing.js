@@ -44,3 +44,11 @@ export function facturesRestantesEstimees(coutDejaConsommeUsd) {
 export function plafondMensuelAtteint(coutDejaConsommeUsd) {
   return (Number(coutDejaConsommeUsd) || 0) >= PLAFOND_MENSUEL_USD;
 }
+
+// Limitation de débit par utilisateur sur l'analyse de facture : évite qu'un
+// compte (script, bug côté client, usage abusif) n'épuise à lui seul le
+// budget IA partagé en quelques minutes. Seuil volontairement large pour ne
+// jamais gêner un usage normal, même en rafale (plusieurs tickets scannés
+// d'affilée après un déplacement).
+export const LIMITE_SCANS_PAR_FENETRE = Number(process.env.LIMITE_SCANS_PAR_FENETRE) || 15;
+export const FENETRE_LIMITE_SCANS_SECONDES = Number(process.env.FENETRE_LIMITE_SCANS_SECONDES) || 60;

@@ -1,12 +1,12 @@
-// Compteur d'usage de l'API Claude, isolé comme le registre des dépenses (cf.
-// cahier des charges §0) : stocké dans "Notes de frais/usage.json" sur le Drive
-// de l'utilisateur, agrégé par mois (nombre de factures analysées, tokens,
-// coût estimé). N'affecte jamais le résultat d'une analyse de facture si son
-// écriture échoue : voir l'appel dans analyser-facture.js.
-import { readJsonFile, writeJsonFile } from "../drive/driveClient.js";
+// Compteur d'usage de l'API Claude. Stocké dans Supabase (table `usage_mensuel`,
+// cf. supabase/migrations/0001_usage_mensuel_partage.sql), PAS dans le Drive de
+// l'utilisateur : le plafond de dépense IA est partagé par tous les
+// utilisateurs de l'app (une seule clé Anthropic) et doit donc vivre dans un
+// espace commun plutôt que dans le Drive de chacun. N'affecte jamais le
+// résultat d'une analyse de facture si son écriture échoue : voir l'appel
+// dans analyser-facture.js.
+import { obtenirUsageMensuel, incrementerUsageMensuel } from "../supabase/client.js";
 import { estimateCostUSD } from "./pricing.js";
-
-const USAGE_FILENAME = "usage.json";
 
 function currentMonthKey() {
   const now = new Date();
@@ -18,26 +18,20 @@ function emptyMonthEntry() {
 }
 
 /** Enregistre un appel à l'API Claude et incrémente le compteur du mois en cours. */
-export async function recordUsage(drive, { model, inputTokens, outputTokens }) {
-  const { fileId, data } = await readJsonFile(drive, USAGE_FILENAME, {});
+export async function recordUsage({ model, inputTokens, outputTokens }) {
   const month = currentMonthKey();
-  const previous = data[month] || emptyMonthEntry();
   const cost = estimateCostUSD({ model, inputTokens, outputTokens });
-
-  const updatedEntry = {
-    factures: previous.factures + 1,
-    input_tokens: previous.input_tokens + (Number(inputTokens) || 0),
-    output_tokens: previous.output_tokens + (Number(outputTokens) || 0),
-    cout_estime_usd: previous.cout_estime_usd + cost,
-  };
-
-  const updated = { ...data, [month]: updatedEntry };
-  await writeJsonFile(drive, fileId, updated);
-  return { month, ...updatedEntry };
+  const updated = await incrementerUsageMensuel({
+    mois: month,
+    inputTokens,
+    outputTokens,
+    coutUsd: cost,
+  });
+  return { month, ...updated };
 }
 
 /** month au format "YYYY-MM" ; par défaut le mois en cours. */
-export async function getUsageForMonth(drive, month = currentMonthKey()) {
-  const { data } = await readJsonFile(drive, USAGE_FILENAME, {});
-  return { month, ...(data[month] || emptyMonthEntry()) };
+export async function getUsageForMonth(month = currentMonthKey()) {
+  const data = await obtenirUsageMensuel(month);
+  return { month, ...(data || emptyMonthEntry()) };
 }
