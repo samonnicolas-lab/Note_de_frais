@@ -259,6 +259,24 @@ a {
   margin-bottom: 16px;
 }
 
+.settings-card-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.settings-card-row > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.settings-card-row .btn {
+  flex: none;
+}
+
 .usage-stats {
   display: flex;
   gap: 12px;

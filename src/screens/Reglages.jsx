@@ -80,48 +80,19 @@ export default function Reglages() {
         <h1>Réglages</h1>
       </header>
 
-      <div className="settings-card">
-        <span className="text-muted">Compte Google connecté</span>
-        <strong>{email || "Inconnu"}</strong>
+      <div className="settings-card settings-card-row">
+        <div>
+          <span className="text-muted">Compte Google connecté</span>
+          <strong>{email || "Inconnu"}</strong>
+        </div>
+        <button type="button" className="btn btn-secondary" onClick={onLogout}>
+          Se déconnecter
+        </button>
       </div>
 
-      <div className="settings-card">
-        <span className="text-muted">Usage de l'IA — {monthLabel(currentMonth())}</span>
-        {loadingUsage && <Spinner label="Chargement..." />}
-        {!loadingUsage && erreurUsage && <div className="alert alert-error">{erreurUsage}</div>}
-        {!loadingUsage && usage && (
-          <div className="usage-stats">
-            <div className="usage-stat">
-              <strong>{usage.factures}</strong>
-              <span className="text-muted text-small">facture{usage.factures > 1 ? "s" : ""} analysée{usage.factures > 1 ? "s" : ""}</span>
-            </div>
-            <div className="usage-stat">
-              <strong>{usage.factures_restantes_estimees}</strong>
-              <span className="text-muted text-small">factures restantes estimées ce mois</span>
-            </div>
-          </div>
-        )}
-        {!loadingUsage && usage?.plafond_atteint && (
-          <div className="alert alert-warning">
-            Le plafond mensuel d'analyse par IA est atteint. Les fournisseurs déjà reconnus continuent
-            de fonctionner normalement ; les nouveaux justificatifs devront être saisis manuellement
-            jusqu'au mois prochain.
-          </div>
-        )}
-        <p className="text-muted text-small">
-          Cette application utilise l'API Claude (Anthropic) pour lire vos factures automatiquement.
-          Une seule clé API, payée par le développeur, est partagée par tous les utilisateurs de l'app.
-          Pour éviter toute dérive, l'analyse par IA est limitée à environ 880 factures par mois au
-          total (tous utilisateurs confondus) ; au-delà, elle est suspendue jusqu'au mois suivant. Les
-          factures des fournisseurs déjà reconnues automatiquement continuent cependant de fonctionner
-          normalement, sans passer par l'IA.
-        </p>
-        <p className="text-muted text-small">
-          💙 Cette application est gratuite et financée personnellement par son développeur
-          (hébergement + API IA). Si elle vous est utile, un don libre via Wero au 06 10 67 17 64 est
-          apprécié — sans aucune obligation.
-        </p>
-      </div>
+      <button type="button" className="btn btn-secondary btn-block" onClick={() => navigate("/modele-excel")}>
+        Modèle Excel d'export
+      </button>
 
       <div className="settings-card">
         <span className="text-muted">Informations personnelles</span>
@@ -172,13 +143,43 @@ export default function Reglages() {
         )}
       </div>
 
-      <button type="button" className="btn btn-secondary btn-block" onClick={() => navigate("/modele-excel")}>
-        Modèle Excel d'export
-      </button>
-
-      <button type="button" className="btn btn-secondary btn-block" onClick={onLogout}>
-        Se déconnecter
-      </button>
+      <div className="settings-card">
+        <span className="text-muted">Usage de l'IA — {monthLabel(currentMonth())}</span>
+        {loadingUsage && <Spinner label="Chargement..." />}
+        {!loadingUsage && erreurUsage && <div className="alert alert-error">{erreurUsage}</div>}
+        {!loadingUsage && usage && (
+          <div className="usage-stats">
+            <div className="usage-stat">
+              <strong>{usage.factures}</strong>
+              <span className="text-muted text-small">facture{usage.factures > 1 ? "s" : ""} analysée{usage.factures > 1 ? "s" : ""}</span>
+            </div>
+            <div className="usage-stat">
+              <strong>{usage.factures_restantes_estimees}</strong>
+              <span className="text-muted text-small">factures restantes estimées ce mois</span>
+            </div>
+          </div>
+        )}
+        {!loadingUsage && usage?.plafond_atteint && (
+          <div className="alert alert-warning">
+            Le plafond mensuel d'analyse par IA est atteint. Les fournisseurs déjà reconnus continuent
+            de fonctionner normalement ; les nouveaux justificatifs devront être saisis manuellement
+            jusqu'au mois prochain.
+          </div>
+        )}
+        <p className="text-muted text-small">
+          Cette application utilise l'API Claude (Anthropic) pour lire vos factures automatiquement.
+          Une seule clé API, payée par le développeur, est partagée par tous les utilisateurs de l'app.
+          Pour éviter toute dérive, l'analyse par IA est limitée à environ 880 factures par mois au
+          total (tous utilisateurs confondus) ; au-delà, elle est suspendue jusqu'au mois suivant. Les
+          factures des fournisseurs déjà reconnues automatiquement continuent cependant de fonctionner
+          normalement, sans passer par l'IA.
+        </p>
+        <p className="text-muted text-small">
+          💙 Cette application est gratuite et financée personnellement par son développeur
+          (hébergement + API IA). Si elle vous est utile, un don libre via Wero au 06 10 67 17 64 est
+          apprécié — sans aucune obligation.
+        </p>
+      </div>
     </div>
   );
 }
