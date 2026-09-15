@@ -32,9 +32,11 @@ const MOTS_CLES = {
 
 function suggererMapping(colonnes) {
   const mapping = {};
+  const colonnesUtilisees = new Set();
   for (const champ of Object.keys(MOTS_CLES)) {
-    const trouve = colonnes.find((c) => MOTS_CLES[champ].test(c.valeur));
+    const trouve = colonnes.find((c) => !colonnesUtilisees.has(c.colonne) && MOTS_CLES[champ].test(c.valeur));
     mapping[champ] = trouve ? trouve.colonne : "";
+    if (trouve) colonnesUtilisees.add(trouve.colonne);
   }
   return mapping;
 }
@@ -287,26 +289,36 @@ export default function ModeleExcel() {
           </label>
 
           <div className="form">
-            {CHAMPS.map((champ) => (
-              <label className="field" key={champ.cle}>
-                <span>
-                  {champ.label}
-                  {champ.cle === "tva" && " (le total TVA y sera aussi inscrit automatiquement)"}
-                </span>
-                <select
-                  className="field-input"
-                  value={mapping[champ.cle] || ""}
-                  onChange={(e) => setMapping((m) => ({ ...m, [champ.cle]: e.target.value }))}
-                >
-                  <option value="">Aucune correspondance</option>
-                  {colonnesDeLaLigne(ligneEntete).map((c) => (
-                    <option key={c.colonne} value={c.colonne}>
-                      Colonne {c.colonne} — {c.valeur}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ))}
+            {CHAMPS.map((champ) => {
+              // Une même colonne ne peut pas être associée à deux champs différents :
+              // les colonnes déjà choisies ailleurs sont désactivées dans ce menu.
+              const colonnesUtiliseesAilleurs = new Set(
+                CHAMPS.filter((c) => c.cle !== champ.cle)
+                  .map((c) => mapping[c.cle])
+                  .filter(Boolean)
+              );
+              return (
+                <label className="field" key={champ.cle}>
+                  <span>
+                    {champ.label}
+                    {champ.cle === "tva" && " (le total TVA y sera aussi inscrit automatiquement)"}
+                  </span>
+                  <select
+                    className="field-input"
+                    value={mapping[champ.cle] || ""}
+                    onChange={(e) => setMapping((m) => ({ ...m, [champ.cle]: e.target.value }))}
+                  >
+                    <option value="">Aucune correspondance</option>
+                    {colonnesDeLaLigne(ligneEntete).map((c) => (
+                      <option key={c.colonne} value={c.colonne} disabled={colonnesUtiliseesAilleurs.has(c.colonne)}>
+                        Colonne {c.colonne} — {c.valeur}
+                        {colonnesUtiliseesAilleurs.has(c.colonne) ? " (déjà utilisée)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              );
+            })}
           </div>
 
           <div className="settings-card">
