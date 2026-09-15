@@ -96,6 +96,8 @@ export const api = {
 
   obtenirModeleExcel: () => request("/obtenir-modele-excel"),
 
+  obtenirModeleExcelExistant: () => request("/modele-excel-existant"),
+
   supprimerModeleExcel: () =>
     request("/supprimer-modele-excel", { method: "POST" }),
 

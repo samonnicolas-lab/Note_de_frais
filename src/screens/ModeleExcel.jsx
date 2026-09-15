@@ -48,6 +48,22 @@ function extraireColonnes(liste, numero) {
   return ligne ? ligne.cellules : [];
 }
 
+function normaliserCellules(cellules) {
+  const resultat = { ...CELLULES_VIDES };
+  for (const champ of CHAMPS_CELLULES) {
+    resultat[champ.cle] = (cellules && cellules[champ.cle]) || "";
+  }
+  return resultat;
+}
+
+function normaliserMapping(mapping) {
+  const resultat = {};
+  for (const champ of CHAMPS) {
+    resultat[champ.cle] = (mapping && mapping[champ.cle]) || "";
+  }
+  return resultat;
+}
+
 export default function ModeleExcel() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
@@ -101,6 +117,25 @@ export default function ModeleExcel() {
       setEtape("mapping");
     } catch (err) {
       setErreur(err.message || "L'analyse du fichier a échoué.");
+    } finally {
+      setEnCours(false);
+    }
+  };
+
+  const onModifierMapping = async () => {
+    setEnCours(true);
+    setErreur(null);
+    try {
+      const data = await api.obtenirModeleExcelExistant();
+      setFileBase64(data.fileBase64);
+      setFileName(data.fileName);
+      setApercu(data.apercu);
+      setLigneEntete(data.config.ligneEntete);
+      setMapping(normaliserMapping(data.config.mapping));
+      setCellules(normaliserCellules(data.config.cellules));
+      setEtape("mapping");
+    } catch (err) {
+      setErreur(err.message || "Impossible de récupérer le modèle actuel.");
     } finally {
       setEnCours(false);
     }
@@ -213,9 +248,14 @@ export default function ModeleExcel() {
           />
 
           {statut?.configure && (
-            <button type="button" className="btn btn-secondary btn-block" onClick={onSupprimer} disabled={enCours}>
-              Revenir à l'export standard
-            </button>
+            <>
+              <button type="button" className="btn btn-secondary btn-block" onClick={onModifierMapping} disabled={enCours}>
+                {enCours ? <Spinner label="Chargement..." /> : "Modifier le paramétrage des cellules"}
+              </button>
+              <button type="button" className="btn btn-secondary btn-block" onClick={onSupprimer} disabled={enCours}>
+                Revenir à l'export standard
+              </button>
+            </>
           )}
 
           <button type="button" className="btn btn-link" onClick={() => navigate("/reglages")}>
