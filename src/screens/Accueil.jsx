@@ -169,16 +169,6 @@ export default function Accueil() {
             <strong className="total-amount">{formatAmount(data?.total_ttc || 0)}</strong>
           </div>
 
-          <label className="select-all-row">
-            <input
-              type="checkbox"
-              className="expense-checkbox"
-              checked={afficherDescriptions}
-              onChange={(e) => onChangerAfficherDescriptions(e.target.checked)}
-            />
-            <span className="text-muted text-small">Afficher les descriptions</span>
-          </label>
-
           {sorted.length === 0 ? (
             <div className="empty-state">
               <p>Aucune dépense enregistrée pour ce mois.</p>
@@ -186,17 +176,28 @@ export default function Accueil() {
             </div>
           ) : (
             <>
-              <label className="select-all-row">
-                <input
-                  type="checkbox"
-                  className="expense-checkbox"
-                  checked={tousSelectionnes}
-                  ref={(el) => { if (el) el.indeterminate = selection.size > 0 && !tousSelectionnes; }}
-                  onChange={toggleSelectionTout}
-                  aria-label="Sélectionner toutes les dépenses du mois"
-                />
-                <span className="text-muted text-small">Tout sélectionner ({sorted.length})</span>
-              </label>
+              <div className="expense-list-toolbar">
+                <label className="select-all-row">
+                  <input
+                    type="checkbox"
+                    className="expense-checkbox"
+                    checked={tousSelectionnes}
+                    ref={(el) => { if (el) el.indeterminate = selection.size > 0 && !tousSelectionnes; }}
+                    onChange={toggleSelectionTout}
+                    aria-label="Sélectionner toutes les dépenses du mois"
+                  />
+                  <span className="text-muted text-small">Tout sélectionner ({sorted.length})</span>
+                </label>
+                <label className="select-all-row">
+                  <input
+                    type="checkbox"
+                    className="expense-checkbox"
+                    checked={afficherDescriptions}
+                    onChange={(e) => onChangerAfficherDescriptions(e.target.checked)}
+                  />
+                  <span className="text-muted text-small">Afficher les descriptions</span>
+                </label>
+              </div>
               <ul className="expense-list">
               {sorted.map((d) => (
                 <li key={d.id} className="expense-item expense-item-selectable">

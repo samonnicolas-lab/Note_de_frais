@@ -811,6 +811,14 @@ textarea.field-input {
 }
 
 /* Sélection multiple et suppression */
+.expense-list-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .select-all-row {
   display: flex;
   align-items: center;
