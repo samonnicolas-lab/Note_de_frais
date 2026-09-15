@@ -10,7 +10,7 @@ import { getProfil } from "./lib/profil/index.js";
 import { generateFixedColumnsWorkbook, LIGNE_ENTETE, NB_COLONNES } from "./lib/export/fixedColumnsExporter.js";
 import { generateFromTemplate } from "./lib/export/customTemplateExporter.js";
 import { depensesExemple } from "./lib/export/depensesExemple.js";
-import { renderWorksheetToPng } from "./lib/export/renderPreviewImage.js";
+import { renderWorksheetToPng, construirePaletteTheme } from "./lib/export/renderPreviewImage.js";
 
 const NB_LIGNES_EXEMPLE = 3;
 const MAX_COLONNES = 20; // garde-fou si un modèle personnalisé définit énormément de colonnes
@@ -99,7 +99,7 @@ export default async (request) => {
       throw new HttpError(500, "Impossible de générer l'aperçu : classeur vide.");
     }
 
-    const png = renderWorksheetToPng(worksheet, plage);
+    const png = renderWorksheetToPng(worksheet, plage, construirePaletteTheme(workbook));
     const dataUrl = `data:image/png;base64,${png.toString("base64")}`;
     return json(200, { image: dataUrl });
   });

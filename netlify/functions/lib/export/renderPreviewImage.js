@@ -15,9 +15,47 @@ const MARGE = 10;
 const COULEUR_GRILLE_DEFAUT = "#d9d9d9";
 const EPAISSEUR_BORDURE = { thin: 1, hair: 1, medium: 2, thick: 3, double: 2 };
 
-function argbVersCss(argb, defaut) {
-  if (!argb || argb.length < 6) return defaut;
-  return `#${argb.slice(-6)}`;
+// Ordre des 12 couleurs de base d'un thème Office/Google Sheets, tel que
+// référencé par l'attribut "theme" d'une couleur de style (0-11). Attention :
+// cet ordre n'est PAS celui de déclaration dans le XML du thème (dk1, lt1,
+// dk2, lt2, ...) — c'est un décalage documenté du format OOXML (bg1/tx1
+// pointent par défaut vers lt1/dk1, pas dk1/lt1).
+const ORDRE_THEME = ["lt1", "dk1", "lt2", "dk2", "accent1", "accent2", "accent3", "accent4", "accent5", "accent6", "hlink", "folHlink"];
+
+function extraireCouleurTheme(xml, nomBalise) {
+  const bloc = xml.match(new RegExp(`<a:${nomBalise}>([\\s\\S]*?)</a:${nomBalise}>`));
+  if (!bloc) return null;
+  const m = bloc[1].match(/lastClr="([0-9A-Fa-f]{6})"/) || bloc[1].match(/val="([0-9A-Fa-f]{6})"/);
+  return m ? m[1].toUpperCase() : null;
+}
+
+/** Palette des 12 couleurs de thème du classeur (index -> "RRGGBB"), ou null si indisponible. */
+export function construirePaletteTheme(workbook) {
+  const xml = workbook && workbook.model && workbook.model.themes && workbook.model.themes.theme1;
+  if (!xml) return null;
+  return ORDRE_THEME.map((nom) => extraireCouleurTheme(xml, nom) || "000000");
+}
+
+// Algorithme de teinte OOXML (approximation linéaire usuelle) : assombrit si
+// tint < 0, éclaircit vers le blanc si tint > 0.
+function appliquerTeinte(hex, tint) {
+  if (!tint) return hex;
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  const ajuster = (c) => (tint < 0 ? c * (1 + tint) : c * (1 - tint) + 255 * tint);
+  const enHex = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0");
+  return `${enHex(ajuster(r))}${enHex(ajuster(g))}${enHex(ajuster(b))}`.toUpperCase();
+}
+
+/** Résout une couleur ExcelJS ({argb} ou {theme, tint}) en couleur CSS. */
+function resoudreCouleur(couleur, paletteTheme, defaut) {
+  if (!couleur) return defaut;
+  if (couleur.argb) return `#${String(couleur.argb).slice(-6)}`;
+  if (couleur.theme !== undefined && paletteTheme && paletteTheme[couleur.theme]) {
+    return `#${appliquerTeinte(paletteTheme[couleur.theme], couleur.tint || 0)}`;
+  }
+  return defaut;
 }
 
 function largeurColonnePx(worksheet, index) {
@@ -47,16 +85,14 @@ function trouverFusion(fusions, ligne, colonne) {
   return fusions.find((f) => ligne >= f.top && ligne <= f.bottom && colonne >= f.left && colonne <= f.right);
 }
 
+// Le texte affichable d'une cellule est délégué à ExcelJS (`cellule.text`,
+// qui gère déjà texte simple, texte enrichi, hyperliens et formules avec
+// résultat mis en cache) sauf pour les nombres et les dates, où l'on veut un
+// format français explicite plutôt que la valeur brute non formatée par ExcelJS.
 function formaterValeur(cellule) {
-  let valeur = cellule.value;
-  if (valeur === null || valeur === undefined) return "";
-  if (typeof valeur === "object") {
-    if (valeur.hyperlink !== undefined) return String(valeur.text || valeur.hyperlink || "");
-    if (valeur.richText) return valeur.richText.map((r) => r.text).join("");
-    if (valeur.result !== undefined) valeur = valeur.result;
-    else if (valeur.formula !== undefined) return "";
-    else return String(cellule.text || "");
-  }
+  const valeur = cellule.value;
+  if (valeur === null || valeur === undefined || valeur === "") return "";
+  if (valeur instanceof Date) return valeur.toLocaleDateString("fr-FR");
   if (typeof valeur === "number") {
     const fmt = cellule.numFmt || "";
     if (fmt.includes("€")) {
@@ -65,16 +101,16 @@ function formaterValeur(cellule) {
     if (fmt.includes("%")) return `${Math.round(valeur * 100)}%`;
     return String(valeur);
   }
-  if (valeur instanceof Date) return valeur.toLocaleDateString("fr-FR");
-  return String(valeur);
+  return String(cellule.text ?? valeur);
 }
 
 /**
  * @param {import('exceljs').Worksheet} worksheet
  * @param {{ligneDebut:number, ligneFin:number, colonneDebut:number, colonneFin:number}} plage
+ * @param {Array<string>|null} [paletteTheme] Palette de thème du classeur (cf. construirePaletteTheme).
  * @returns {Buffer} image PNG.
  */
-export function renderWorksheetToPng(worksheet, { ligneDebut, ligneFin, colonneDebut, colonneFin }) {
+export function renderWorksheetToPng(worksheet, { ligneDebut, ligneFin, colonneDebut, colonneFin }, paletteTheme = null) {
   const largeursColonnes = [];
   for (let c = colonneDebut; c <= colonneFin; c++) largeursColonnes.push(largeurColonnePx(worksheet, c));
   const hauteursLignes = [];
@@ -118,7 +154,7 @@ export function renderWorksheetToPng(worksheet, { ligneDebut, ligneFin, colonneD
 
       const remplissage = cellule.fill;
       if (remplissage && remplissage.type === "pattern" && remplissage.pattern === "solid" && remplissage.fgColor) {
-        ctx.fillStyle = argbVersCss(remplissage.fgColor.argb, "#ffffff");
+        ctx.fillStyle = resoudreCouleur(remplissage.fgColor, paletteTheme, "#ffffff");
         ctx.fillRect(x, y, largeur, hauteur);
       }
 
@@ -131,7 +167,7 @@ export function renderWorksheetToPng(worksheet, { ligneDebut, ligneFin, colonneD
       for (const cote of ["top", "left", "bottom", "right"]) {
         const bordure = cellule.border && cellule.border[cote];
         if (!bordure) continue;
-        ctx.strokeStyle = argbVersCss(bordure.color && bordure.color.argb, "#000000");
+        ctx.strokeStyle = resoudreCouleur(bordure.color, paletteTheme, "#000000");
         ctx.lineWidth = EPAISSEUR_BORDURE[bordure.style] || 1;
         ctx.beginPath();
         if (cote === "top") { ctx.moveTo(x, y); ctx.lineTo(x + largeur, y); }
@@ -146,7 +182,7 @@ export function renderWorksheetToPng(worksheet, { ligneDebut, ligneFin, colonneD
         const police = cellule.font || {};
         const taille = Math.round((police.size || 11) * PX_PAR_POINT);
         ctx.font = `${police.italic ? "italic " : ""}${police.bold ? "bold " : ""}${taille}px Arial, sans-serif`;
-        ctx.fillStyle = argbVersCss(police.color && police.color.argb, "#000000");
+        ctx.fillStyle = resoudreCouleur(police.color, paletteTheme, "#000000");
         ctx.textBaseline = "middle";
 
         const alignement =
