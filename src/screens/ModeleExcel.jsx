@@ -2,19 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { prepareFileForUpload } from "../utils/image";
+import { CHAMPS_MODELE as CHAMPS } from "../utils/exportColumns";
 import Spinner from "../components/Spinner";
-
-const CHAMPS = [
-  { cle: "date", label: "Date" },
-  { cle: "fournisseur", label: "Fournisseur" },
-  { cle: "categorie", label: "Catégorie" },
-  { cle: "description", label: "Description" },
-  { cle: "montant_ht", label: "Montant HT" },
-  { cle: "tva", label: "TVA" },
-  { cle: "montant_ttc", label: "Montant TTC" },
-  { cle: "invites", label: "Personnes invitées" },
-  { cle: "lien_justificatif", label: "Lien justificatif Drive" },
-];
 
 // Informations d'en-tête : une seule cellule chacune (pas répétées par ligne).
 // Le total TVA n'en fait pas partie : il est ajouté automatiquement sur la ligne

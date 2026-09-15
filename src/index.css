@@ -333,6 +333,50 @@ a {
   margin: 2px 0 0;
 }
 
+.modele-apercu {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 16px;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  width: 100%;
+}
+
+.modele-apercu:hover {
+  border-color: var(--color-primary);
+}
+
+.modele-apercu-grille {
+  display: flex;
+  gap: 1px;
+  overflow-x: auto;
+  margin-top: 4px;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.modele-apercu-cellule {
+  flex: none;
+  background: var(--color-bg);
+  border-right: 1px solid var(--color-border);
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.modele-apercu-cellule:last-child {
+  border-right: none;
+}
+
 .usage-stats {
   display: flex;
   gap: 12px;

@@ -1,13 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { currentMonth, monthLabel, shiftMonth } from "../utils/format";
+import { COLONNES_EXPORT_STANDARD, colonnesModelePersonnalise } from "../utils/exportColumns";
 import Spinner from "../components/Spinner";
 
 export default function Export() {
+  const navigate = useNavigate();
   const [month, setMonth] = useState(currentMonth());
   const [enCours, setEnCours] = useState(false);
   const [erreur, setErreur] = useState(null);
   const [resultat, setResultat] = useState(null);
+  const [statutModele, setStatutModele] = useState(null); // { configure, config }
+
+  useEffect(() => {
+    let annule = false;
+    api
+      .obtenirModeleExcel()
+      .then((data) => { if (!annule) setStatutModele(data); })
+      .catch(() => { if (!annule) setStatutModele(null); });
+    return () => { annule = true; };
+  }, []);
+
+  const modeleConfigure = statutModele?.configure;
+  const colonnesApercu = modeleConfigure
+    ? colonnesModelePersonnalise(statutModele.config.mapping)
+    : COLONNES_EXPORT_STANDARD;
 
   const genererExport = async () => {
     setEnCours(true);
@@ -53,6 +71,20 @@ export default function Export() {
         Génère un fichier Excel (.xlsx) des dépenses du mois sélectionné et l'archive automatiquement
         sur votre Drive, dans le dossier « Notes de frais/{month}/ ».
       </p>
+
+      {statutModele && (
+        <button type="button" className="modele-apercu" onClick={() => navigate("/modele-excel")}>
+          <span className="text-muted text-small">
+            {modeleConfigure ? "Modèle utilisé" : "Aucun modèle personnalisé"}
+          </span>
+          <strong>{modeleConfigure ? statutModele.config.fileName : "Export standard de l'application"}</strong>
+          <div className="modele-apercu-grille">
+            {colonnesApercu.map((col, i) => (
+              <span key={i} className="modele-apercu-cellule">{col}</span>
+            ))}
+          </div>
+        </button>
+      )}
 
       <button type="button" className="btn btn-primary btn-block" onClick={genererExport} disabled={enCours}>
         {enCours ? <Spinner label="Génération en cours..." /> : "Générer l'export"}
