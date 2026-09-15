@@ -28,10 +28,18 @@
   ]
 
 # apercu-export dessine l'aperçu d'export (lib/export/renderPreviewImage.js)
-# avec @napi-rs/canvas (binaire natif) : même traitement que ci-dessus.
+# avec @napi-rs/canvas (binaire natif) : même traitement que ci-dessus. En
+# plus : l'environnement d'exécution des Netlify Functions n'a aucune police
+# système, donc le texte dessiné serait invisible sans une police embarquée
+# explicitement enregistrée (voir renderPreviewImage.js) — on réutilise les
+# polices standard de pdfjs-dist (Liberation Sans, chargée à l'exécution via
+# un chemin de fichier, non détectée par l'analyse statique de Netlify).
 [functions."apercu-export"]
   external_node_modules = ["@napi-rs/canvas"]
-  included_files = ["node_modules/@napi-rs/**"]
+  included_files = [
+    "node_modules/@napi-rs/**",
+    "node_modules/pdfjs-dist/standard_fonts/*.ttf",
+  ]
 
 # Toutes les fonctions serverless sont exposées sous /api/*.
 # Cette règle est évaluée avant le fallback SPA ci-dessous.

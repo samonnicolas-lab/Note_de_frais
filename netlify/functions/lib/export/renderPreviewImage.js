@@ -6,7 +6,35 @@
 // déjà utilisé dans le pipeline OCR — pas de dépendance supplémentaire, et
 // pas de conversion .xlsx -> image via un outil externe (LibreOffice etc.)
 // indisponible dans une fonction Netlify.
-import { createCanvas } from "@napi-rs/canvas";
+import { createCanvas, GlobalFonts } from "@napi-rs/canvas";
+import { join } from "node:path";
+
+// Contrairement à un poste de développement, l'environnement d'exécution des
+// Netlify Functions n'a AUCUNE police système installée : sans enregistrement
+// explicite, @napi-rs/canvas ne trouve aucune police, et `ctx.fillText` ne
+// dessine rien de visible (aucune erreur levée — constaté en production avec
+// un modèle personnalisé : bordures et remplissages corrects, tout le texte
+// invisible). On enregistre Liberation Sans (métriquement compatible Arial),
+// déjà présente comme police standard de pdfjs-dist, sous le nom "Arial" pour
+// que les `ctx.font = "...Arial..."` du reste de ce fichier la trouvent.
+const DOSSIER_POLICES = join(process.cwd(), "node_modules/pdfjs-dist/standard_fonts");
+let policesEnregistrees = false;
+function garantirPolices() {
+  if (policesEnregistrees) return;
+  policesEnregistrees = true;
+  for (const fichier of [
+    "LiberationSans-Regular.ttf",
+    "LiberationSans-Bold.ttf",
+    "LiberationSans-Italic.ttf",
+    "LiberationSans-BoldItalic.ttf",
+  ]) {
+    try {
+      GlobalFonts.registerFromPath(join(DOSSIER_POLICES, fichier), "Arial");
+    } catch (err) {
+      console.error(`Impossible d'enregistrer la police ${fichier} :`, err.message);
+    }
+  }
+}
 
 const PX_PAR_POINT = 96 / 72; // conversion points Excel -> pixels écran (96 DPI)
 const LARGEUR_COLONNE_DEFAUT_UNITES = 8.43; // largeur de colonne par défaut d'Excel
@@ -111,6 +139,8 @@ function formaterValeur(cellule) {
  * @returns {Buffer} image PNG.
  */
 export function renderWorksheetToPng(worksheet, { ligneDebut, ligneFin, colonneDebut, colonneFin }, paletteTheme = null) {
+  garantirPolices();
+
   const largeursColonnes = [];
   for (let c = colonneDebut; c <= colonneFin; c++) largeursColonnes.push(largeurColonnePx(worksheet, c));
   const hauteursLignes = [];

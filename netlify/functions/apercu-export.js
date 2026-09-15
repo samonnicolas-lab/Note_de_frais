@@ -99,27 +99,6 @@ export default async (request) => {
       throw new HttpError(500, "Impossible de générer l'aperçu : classeur vide.");
     }
 
-    // Diagnostic temporaire : aide à comprendre pourquoi l'aperçu d'un modèle
-    // personnalisé peut sortir sans aucune donnée dans les cellules. À retirer
-    // une fois le problème identifié.
-    console.log(
-      "[apercu-export] config présent=", !!config,
-      "ligneEntete=", config && config.ligneEntete,
-      "mapping=", JSON.stringify(config && config.mapping),
-      "cellules=", JSON.stringify(config && config.cellules)
-    );
-    console.log("[apercu-export] plage calculée=", JSON.stringify(plage));
-    const contenu = [];
-    for (let l = plage.ligneDebut; l <= plage.ligneFin; l++) {
-      for (let c = plage.colonneDebut; c <= plage.colonneFin; c++) {
-        const cell = worksheet.getCell(l, c);
-        if (cell.value !== null && cell.value !== undefined && cell.value !== "") {
-          contenu.push(`${cell.address}=${JSON.stringify(cell.value)}`);
-        }
-      }
-    }
-    console.log("[apercu-export] cellules non vides dans la plage :", contenu.join(" | ") || "(aucune)");
-
     const png = renderWorksheetToPng(worksheet, plage, construirePaletteTheme(workbook));
     const dataUrl = `data:image/png;base64,${png.toString("base64")}`;
     return json(200, { image: dataUrl });
