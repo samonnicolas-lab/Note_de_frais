@@ -1,0 +1,95 @@
+// Génère un aperçu visuel (image PNG) du fichier d'export : l'en-tête réel
+// du fichier (standard ou modèle personnalisé) suivi de quelques lignes
+// d'exemple, rendu à partir du vrai classeur ExcelJS qui serait produit par
+// un export réel (cf. lib/export/index.js) — pas une reconstitution HTML
+// approximative. Voir lib/export/renderPreviewImage.js pour le rendu.
+import { json, withErrorHandling, HttpError } from "./lib/http.js";
+import { requireDriveClient } from "./lib/auth/session.js";
+import { getModeleConfig, downloadModeleTemplate } from "./lib/modele/index.js";
+import { getProfil } from "./lib/profil/index.js";
+import { generateFixedColumnsWorkbook, LIGNE_ENTETE, NB_COLONNES } from "./lib/export/fixedColumnsExporter.js";
+import { generateFromTemplate } from "./lib/export/customTemplateExporter.js";
+import { depensesExemple } from "./lib/export/depensesExemple.js";
+import { renderWorksheetToPng } from "./lib/export/renderPreviewImage.js";
+
+const NB_LIGNES_EXEMPLE = 3;
+const MAX_COLONNES = 20; // garde-fou si un modèle personnalisé définit énormément de colonnes
+
+function lettreVersIndex(lettre) {
+  let n = 0;
+  for (const c of String(lettre || "").toUpperCase()) n = n * 26 + (c.charCodeAt(0) - 64);
+  return n || 1;
+}
+
+/** Extrait la partie lettres d'une référence de cellule ("B2" -> "B"). */
+function colonneDeReference(ref) {
+  const m = String(ref || "").match(/^[A-Za-z]+/);
+  return m ? m[0] : "";
+}
+
+export default async (request) => {
+  return withErrorHandling(async () => {
+    if (request.method !== "GET") {
+      return json(405, { error: "Méthode non autorisée." });
+    }
+    const { drive } = requireDriveClient(request);
+
+    const url = new URL(request.url);
+    const month = url.searchParams.get("month");
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      throw new HttpError(400, "Le paramètre 'month' (YYYY-MM) est requis.");
+    }
+
+    const [config, profil] = await Promise.all([getModeleConfig(drive), getProfil(drive)]);
+    const exemples = depensesExemple(month);
+
+    let workbook;
+    let plage;
+    if (config) {
+      const templateBuffer = await downloadModeleTemplate(drive, config.templateFileId);
+      workbook = await generateFromTemplate(
+        templateBuffer,
+        config.mapping,
+        config.ligneEntete,
+        exemples,
+        month,
+        config.cellules,
+        profil
+      );
+      // La colonne la plus à droite à afficher : celles du mapping de données,
+      // mais aussi celles des informations d'en-tête (nom/fonction/mois/iban),
+      // qui peuvent se trouver au-delà des colonnes de données mappées.
+      const colonnesReferencees = [
+        ...Object.values(config.mapping || {}),
+        ...Object.values(config.cellules || {}),
+      ]
+        .filter(Boolean)
+        .map(colonneDeReference)
+        .map(lettreVersIndex);
+      const colonneFin = Math.min(Math.max(1, ...colonnesReferencees), MAX_COLONNES);
+      plage = {
+        ligneDebut: 1,
+        ligneFin: config.ligneEntete + NB_LIGNES_EXEMPLE,
+        colonneDebut: 1,
+        colonneFin: colonneFin,
+      };
+    } else {
+      workbook = await generateFixedColumnsWorkbook(exemples, month, profil);
+      plage = {
+        ligneDebut: 1,
+        ligneFin: LIGNE_ENTETE + NB_LIGNES_EXEMPLE,
+        colonneDebut: 1,
+        colonneFin: NB_COLONNES,
+      };
+    }
+
+    const worksheet = workbook.worksheets[0];
+    if (!worksheet) {
+      throw new HttpError(500, "Impossible de générer l'aperçu : classeur vide.");
+    }
+
+    const png = renderWorksheetToPng(worksheet, plage);
+    const dataUrl = `data:image/png;base64,${png.toString("base64")}`;
+    return json(200, { image: dataUrl });
+  });
+};

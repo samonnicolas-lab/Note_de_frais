@@ -77,6 +77,8 @@ export const api = {
       body: JSON.stringify({ month }),
     }),
 
+  apercuExport: (month) => request(`/apercu-export?month=${encodeURIComponent(month)}`),
+
   usageMensuel: (month) =>
     request(`/usage-mensuel${month ? `?month=${encodeURIComponent(month)}` : ""}`),
 

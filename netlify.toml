@@ -27,6 +27,12 @@
     "node_modules/@napi-rs/**",
   ]
 
+# apercu-export dessine l'aperçu d'export (lib/export/renderPreviewImage.js)
+# avec @napi-rs/canvas (binaire natif) : même traitement que ci-dessus.
+[functions."apercu-export"]
+  external_node_modules = ["@napi-rs/canvas"]
+  included_files = ["node_modules/@napi-rs/**"]
+
 # Toutes les fonctions serverless sont exposées sous /api/*.
 # Cette règle est évaluée avant le fallback SPA ci-dessous.
 [[redirects]]

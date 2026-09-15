@@ -15,8 +15,8 @@ const COLUMNS = [
   { header: "Personnes invitées", width: 28 },
   { header: "Lien justificatif Drive", width: 40 },
 ];
-const NB_COLONNES = COLUMNS.length;
-const LIGNE_ENTETE = 5; // 1: titre, 2-3: identité/mois/IBAN, 4: espacement, 5: en-têtes
+export const NB_COLONNES = COLUMNS.length;
+export const LIGNE_ENTETE = 5; // 1: titre, 2-3: identité/mois/IBAN, 4: espacement, 5: en-têtes
 
 const MOIS_LABELS = [
   "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",

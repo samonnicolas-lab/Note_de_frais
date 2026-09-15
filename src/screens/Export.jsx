@@ -2,14 +2,6 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { currentMonth, monthLabel, shiftMonth } from "../utils/format";
-import {
-  CHAMPS_EXPORT_STANDARD,
-  CHAMPS_ENTETE,
-  champsModelePersonnalise,
-  valeurColonne,
-  valeurEntete,
-  depensesExemple,
-} from "../utils/exportColumns";
 import Spinner from "../components/Spinner";
 
 export default function Export() {
@@ -19,7 +11,9 @@ export default function Export() {
   const [erreur, setErreur] = useState(null);
   const [resultat, setResultat] = useState(null);
   const [statutModele, setStatutModele] = useState(null); // { configure, config }
-  const [profil, setProfil] = useState({ nom: "", fonction: "", iban: "" });
+  const [apercuImage, setApercuImage] = useState(null);
+  const [chargementApercu, setChargementApercu] = useState(true);
+  const [erreurApercu, setErreurApercu] = useState(null);
 
   useEffect(() => {
     let annule = false;
@@ -27,27 +21,22 @@ export default function Export() {
       .obtenirModeleExcel()
       .then((data) => { if (!annule) setStatutModele(data); })
       .catch(() => { if (!annule) setStatutModele(null); });
-    api
-      .obtenirProfil()
-      .then((data) => { if (!annule) setProfil(data.profil); })
-      .catch(() => {});
     return () => { annule = true; };
   }, []);
 
+  useEffect(() => {
+    let annule = false;
+    setChargementApercu(true);
+    setErreurApercu(null);
+    api
+      .apercuExport(month)
+      .then((data) => { if (!annule) setApercuImage(data.image); })
+      .catch((err) => { if (!annule) setErreurApercu(err.message || "L'aperçu n'a pas pu être généré."); })
+      .finally(() => { if (!annule) setChargementApercu(false); });
+    return () => { annule = true; };
+  }, [month]);
+
   const modeleConfigure = statutModele?.configure;
-  const champsApercu = modeleConfigure
-    ? champsModelePersonnalise(statutModele.config.mapping)
-    : CHAMPS_EXPORT_STANDARD;
-  const lignesExemple = depensesExemple(month);
-  const nbColonnes = champsApercu.length;
-
-  // Modèle personnalisé : positions arbitraires dans le fichier de l'utilisateur,
-  // on ne peut pas reconstituer sa mise en page exacte — on liste juste les
-  // informations d'en-tête réellement configurées, avec leur valeur.
-  const champsEnteteConfigures = modeleConfigure
-    ? CHAMPS_ENTETE.filter((c) => statutModele.config.cellules?.[c.cle])
-    : [];
-
   const allerAuModele = () => navigate("/modele-excel");
 
   const genererExport = async () => {
@@ -113,45 +102,12 @@ export default function Export() {
           </span>
           <strong>{modeleConfigure ? statutModele.config.fileName : "Export standard de l'application"}</strong>
 
-          {champsEnteteConfigures.length > 0 && (
-            <p className="text-muted text-small">
-              En-tête du modèle :{" "}
-              {champsEnteteConfigures
-                .map((c) => `${c.label} : ${valeurEntete(c.cle, month, profil) || "(vide)"}`)
-                .join(" · ")}
-            </p>
-          )}
-
           <div className="export-preview">
-            <table className="export-preview-table">
-              {!modeleConfigure && (
-                <thead className="export-preview-entete">
-                  <tr>
-                    <th colSpan={nbColonnes} className="export-preview-titre">NOTE DE FRAIS</th>
-                  </tr>
-                  <tr>
-                    <td colSpan={Math.ceil(nbColonnes / 2)}>Nom : {profil.nom || "—"}</td>
-                    <td colSpan={Math.floor(nbColonnes / 2)}>Fonction : {profil.fonction || "—"}</td>
-                  </tr>
-                  <tr>
-                    <td colSpan={Math.ceil(nbColonnes / 2)}>Mois : {monthLabel(month)}</td>
-                    <td colSpan={Math.floor(nbColonnes / 2)}>IBAN : {profil.iban || "—"}</td>
-                  </tr>
-                </thead>
-              )}
-              <thead>
-                <tr>
-                  {champsApercu.map((c) => <th key={c.cle}>{c.label}</th>)}
-                </tr>
-              </thead>
-              <tbody>
-                {lignesExemple.map((d, i) => (
-                  <tr key={i}>
-                    {champsApercu.map((c) => <td key={c.cle}>{valeurColonne(d, c.cle) || "—"}</td>)}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            {chargementApercu && <Spinner label="Génération de l'aperçu..." />}
+            {!chargementApercu && erreurApercu && <span className="text-muted text-small">{erreurApercu}</span>}
+            {!chargementApercu && apercuImage && (
+              <img src={apercuImage} alt="Aperçu avant impression de l'export" className="export-preview-image" />
+            )}
           </div>
           <span className="text-muted text-small">Aperçu avec des valeurs d'exemple.</span>
           <span className="text-muted text-small">Cliquez pour changer le modèle d'export</span>

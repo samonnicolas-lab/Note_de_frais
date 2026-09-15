@@ -358,47 +358,15 @@ a {
   overflow-x: auto;
   border: 1px solid var(--color-border);
   border-radius: 6px;
+  background: var(--color-bg);
+  padding: 8px;
 }
 
-.export-preview-table {
-  border-collapse: collapse;
-  width: 100%;
-  font-size: 0.72rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.export-preview-table th,
-.export-preview-table td {
+.export-preview-image {
+  display: block;
+  max-width: none;
   border: 1px solid var(--color-border);
-  padding: 5px 9px;
-  white-space: nowrap;
-  max-width: 160px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  text-align: left;
-}
-
-.export-preview-table thead th {
-  background: var(--color-bg);
-  font-weight: 700;
-  color: var(--color-text);
-}
-
-.export-preview-table tbody tr:nth-child(even) {
-  background: var(--color-bg);
-}
-
-.export-preview-titre {
-  text-align: center;
-  font-size: 0.9rem;
-  letter-spacing: 0.02em;
-  padding: 8px 9px;
-}
-
-.export-preview-entete td {
-  background: var(--color-bg);
-  font-weight: 600;
-  white-space: nowrap;
+  box-shadow: var(--shadow);
 }
 
 .usage-stats {
