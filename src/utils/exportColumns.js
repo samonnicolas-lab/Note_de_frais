@@ -1,4 +1,4 @@
-import { formatAmount, formatDateFr } from "./format";
+import { formatAmount, formatDateFr, monthLabel } from "./format";
 
 // Champs disponibles pour le mapping d'un modèle Excel personnalisé (voir
 // ModeleExcel.jsx), et l'ordre des colonnes de l'export standard de l'app
@@ -37,8 +37,11 @@ export function champsModelePersonnalise(mapping) {
   );
 }
 
-function sommeTva(tva) {
-  return (tva || []).reduce((somme, t) => somme + (Number(t.montant) || 0), 0);
+// Même format que côté serveur (fixedColumnsExporter.js / customTemplateExporter.js) :
+// détail par taux, ex. "20% (4,00 €)", pas un total brut.
+export function formatTva(tva) {
+  if (!Array.isArray(tva) || tva.length === 0) return "";
+  return tva.map((t) => `${t.taux}% (${Number(t.montant).toFixed(2)} €)`).join(" ; ");
 }
 
 /** Valeur affichable d'une dépense pour la colonne `cle`, formatée comme dans un vrai export. */
@@ -55,7 +58,7 @@ export function valeurColonne(depense, cle) {
     case "montant_ht":
       return formatAmount(depense.montant_ht);
     case "tva":
-      return formatAmount(sommeTva(depense.tva));
+      return formatTva(depense.tva);
     case "montant_ttc":
       return formatAmount(depense.montant_ttc);
     case "invites":
@@ -65,4 +68,63 @@ export function valeurColonne(depense, cle) {
     default:
       return "";
   }
+}
+
+/** Jour du mois "YYYY-MM" -> date "YYYY-MM-DD" (borne au dernier jour du mois si besoin). */
+function dateDuMois(month, jour) {
+  const [annee, mois] = month.split("-").map(Number);
+  const dernierJour = new Date(annee, mois, 0).getDate();
+  return `${month}-${String(Math.min(jour, dernierJour)).padStart(2, "0")}`;
+}
+
+/** Trois dépenses d'exemple (illustratives, pas les vraies données de l'utilisateur) pour l'aperçu d'export. */
+export function depensesExemple(month) {
+  return [
+    {
+      date: dateDuMois(month, 3),
+      fournisseur: "SNCF Connect",
+      categorie: "Transport",
+      description: "Billet de train Paris–Lyon",
+      montant_ht: 37.5,
+      montant_ttc: 41.25,
+      tva: [{ taux: 10, montant: 3.75 }],
+      invites: "",
+      justificatif_drive_url: "Justificatif_1.pdf",
+    },
+    {
+      date: dateDuMois(month, 12),
+      fournisseur: "Restaurant Le Central",
+      categorie: "Invitation client",
+      description: "Déjeuner de présentation",
+      montant_ht: 66.67,
+      montant_ttc: 80.0,
+      tva: [{ taux: 20, montant: 13.33 }],
+      invites: "M. Dupont (client)",
+      justificatif_drive_url: "Justificatif_2.pdf",
+    },
+    {
+      date: dateDuMois(month, 24),
+      fournisseur: "Hôtel Bellevue",
+      categorie: "Hébergement",
+      description: "Nuit d'hôtel, déplacement client",
+      montant_ht: 90.91,
+      montant_ttc: 100.0,
+      tva: [{ taux: 10, montant: 9.09 }],
+      invites: "",
+      justificatif_drive_url: "Justificatif_3.pdf",
+    },
+  ];
+}
+
+/** Informations d'en-tête (Nom/Fonction/Mois/IBAN) réellement configurées pour un modèle personnalisé. */
+export const CHAMPS_ENTETE = [
+  { cle: "nom", label: "Nom" },
+  { cle: "fonction", label: "Fonction" },
+  { cle: "mois", label: "Mois" },
+  { cle: "iban", label: "IBAN" },
+];
+
+export function valeurEntete(cle, month, profil) {
+  if (cle === "mois") return monthLabel(month);
+  return profil?.[cle] || "";
 }

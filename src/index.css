@@ -388,11 +388,17 @@ a {
   background: var(--color-bg);
 }
 
-.export-preview-table td.export-preview-vide {
-  white-space: normal;
+.export-preview-titre {
   text-align: center;
-  color: var(--color-text-muted);
-  max-width: none;
+  font-size: 0.9rem;
+  letter-spacing: 0.02em;
+  padding: 8px 9px;
+}
+
+.export-preview-entete td {
+  background: var(--color-bg);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .usage-stats {
