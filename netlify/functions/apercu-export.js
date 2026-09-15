@@ -56,9 +56,13 @@ export default async (request) => {
         config.cellules,
         profil
       );
-      // La colonne la plus à droite à afficher : celles du mapping de données,
-      // mais aussi celles des informations d'en-tête (nom/fonction/mois/iban),
-      // qui peuvent se trouver au-delà des colonnes de données mappées.
+      const worksheet = workbook.worksheets[0];
+      if (!worksheet) {
+        throw new HttpError(500, "Impossible de générer l'aperçu : classeur vide.");
+      }
+
+      // Bornes minimales : colonnes du mapping + des informations d'en-tête
+      // (nom/fonction/mois/iban), et les lignes d'exemple qu'on vient d'insérer.
       const colonnesReferencees = [
         ...Object.values(config.mapping || {}),
         ...Object.values(config.cellules || {}),
@@ -66,12 +70,19 @@ export default async (request) => {
         .filter(Boolean)
         .map(colonneDeReference)
         .map(lettreVersIndex);
-      const colonneFin = Math.min(Math.max(1, ...colonnesReferencees), MAX_COLONNES);
+      const colonneMin = Math.max(1, ...colonnesReferencees);
+      const ligneMin = config.ligneEntete + NB_LIGNES_EXEMPLE;
+
+      // Étendues aux cellules déjà remplies dans le modèle de l'utilisateur
+      // (logo, intitulés, encarts...) qui ne font pas partie du mapping mais
+      // doivent quand même apparaître dans l'aperçu — bornées pour ne pas
+      // afficher un modèle immense au-delà de ce qui est réellement utile.
+      const etendue = worksheet.dimensions || { bottom: ligneMin, right: colonneMin };
       plage = {
         ligneDebut: 1,
-        ligneFin: config.ligneEntete + NB_LIGNES_EXEMPLE,
+        ligneFin: Math.min(Math.max(ligneMin, etendue.bottom), ligneMin + 10),
         colonneDebut: 1,
-        colonneFin: colonneFin,
+        colonneFin: Math.min(Math.max(colonneMin, etendue.right), MAX_COLONNES),
       };
     } else {
       workbook = await generateFixedColumnsWorkbook(exemples, month, profil);
