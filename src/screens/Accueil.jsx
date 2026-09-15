@@ -19,6 +19,7 @@ export default function Accueil() {
   const [selection, setSelection] = useState(() => new Set());
   const [confirmationOuverte, setConfirmationOuverte] = useState(false);
   const [suppressionEnCours, setSuppressionEnCours] = useState(false);
+  const [deverrouillageEnCours, setDeverrouillageEnCours] = useState(false);
 
   const charger = useCallback(async (m) => {
     setLoading(true);
@@ -51,6 +52,26 @@ export default function Accueil() {
   };
 
   const annulerSelection = () => setSelection(new Set());
+
+  const tousSelectionnes = sorted.length > 0 && sorted.every((d) => selection.has(d.id));
+
+  const toggleSelectionTout = () => {
+    setSelection(tousSelectionnes ? new Set() : new Set(sorted.map((d) => d.id)));
+  };
+
+  const deverrouillerSelection = async () => {
+    setDeverrouillageEnCours(true);
+    setErreur(null);
+    try {
+      await api.deverrouillerDepenses([...selection]);
+      setSelection(new Set());
+      await charger(month);
+    } catch (err) {
+      setErreur(err.message || "Le déverrouillage a échoué.");
+    } finally {
+      setDeverrouillageEnCours(false);
+    }
+  };
 
   const confirmerSuppression = async () => {
     setSuppressionEnCours(true);
@@ -121,7 +142,19 @@ export default function Accueil() {
               <Link className="btn btn-primary" to="/scanner">Scanner une facture</Link>
             </div>
           ) : (
-            <ul className="expense-list">
+            <>
+              <label className="select-all-row">
+                <input
+                  type="checkbox"
+                  className="expense-checkbox"
+                  checked={tousSelectionnes}
+                  ref={(el) => { if (el) el.indeterminate = selection.size > 0 && !tousSelectionnes; }}
+                  onChange={toggleSelectionTout}
+                  aria-label="Sélectionner toutes les dépenses du mois"
+                />
+                <span className="text-muted text-small">Tout sélectionner ({sorted.length})</span>
+              </label>
+              <ul className="expense-list">
               {sorted.map((d) => (
                 <li key={d.id} className="expense-item expense-item-selectable">
                   <input
@@ -161,7 +194,8 @@ export default function Accueil() {
                   <strong className="expense-amount">{formatAmount(d.montant_ttc)}</strong>
                 </li>
               ))}
-            </ul>
+              </ul>
+            </>
           )}
         </>
       )}
@@ -172,6 +206,14 @@ export default function Accueil() {
           <div className="selection-bar-actions">
             <button type="button" className="btn btn-secondary" onClick={annulerSelection}>
               Annuler
+            </button>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={deverrouillerSelection}
+              disabled={deverrouillageEnCours}
+            >
+              {deverrouillageEnCours ? <Spinner label="Déverrouillage..." /> : "Déverrouiller"}
             </button>
             <button type="button" className="btn btn-danger" onClick={() => setConfirmationOuverte(true)}>
               Supprimer

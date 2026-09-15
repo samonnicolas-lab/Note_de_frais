@@ -805,6 +805,14 @@ textarea.field-input {
 }
 
 /* Sélection multiple et suppression */
+.select-all-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 2px;
+  cursor: pointer;
+}
+
 .expense-checkbox {
   width: 20px;
   height: 20px;

@@ -65,6 +65,12 @@ export const api = {
       body: JSON.stringify({ id }),
     }),
 
+  deverrouillerDepenses: (ids) =>
+    request("/deverrouiller-depenses", {
+      method: "POST",
+      body: JSON.stringify({ ids }),
+    }),
+
   supprimerDepenses: (ids) =>
     request("/supprimer-depenses", {
       method: "POST",

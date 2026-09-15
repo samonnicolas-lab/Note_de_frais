@@ -90,6 +90,20 @@ export async function unlockDepense(drive, id) {
   return updateDepense(drive, id, { statut: STATUT_VALIDEE });
 }
 
+/** Déverrouille plusieurs dépenses exportées en une seule lecture/écriture. */
+export async function unlockDepenses(drive, ids) {
+  const idSet = new Set(ids);
+  const { fileId, depenses } = await readRegistre(drive);
+  let deverrouillees = 0;
+  const updated = depenses.map((d) => {
+    if (!idSet.has(d.id) || d.statut !== STATUT_EXPORTEE) return d;
+    deverrouillees += 1;
+    return { ...d, statut: STATUT_VALIDEE };
+  });
+  await writeRegistre(drive, fileId, updated);
+  return deverrouillees;
+}
+
 /**
  * Supprime une ou plusieurs dépenses du registre (par id) en une seule lecture/
  * écriture. Retourne les dépenses effectivement supprimées, pour permettre à
