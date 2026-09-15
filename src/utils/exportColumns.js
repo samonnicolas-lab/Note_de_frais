@@ -1,3 +1,5 @@
+import { formatAmount, formatDateFr } from "./format";
+
 // Champs disponibles pour le mapping d'un modèle Excel personnalisé (voir
 // ModeleExcel.jsx), et l'ordre des colonnes de l'export standard de l'app
 // quand aucun modèle personnalisé n'est configuré (voir
@@ -15,7 +17,7 @@ export const CHAMPS_MODELE = [
   { cle: "lien_justificatif", label: "Lien justificatif Drive" },
 ];
 
-export const COLONNES_EXPORT_STANDARD = CHAMPS_MODELE.map((c) => c.label);
+export const CHAMPS_EXPORT_STANDARD = CHAMPS_MODELE;
 
 /** Convertit une référence de colonne Excel ("A", "B", ... "AA") en index numérique pour le tri. */
 export function colonneVersIndex(lettre) {
@@ -28,9 +30,39 @@ export function colonneVersIndex(lettre) {
   return n || Number.MAX_SAFE_INTEGER;
 }
 
-/** Colonnes mappées d'un modèle personnalisé, triées dans leur ordre réel dans le fichier. */
-export function colonnesModelePersonnalise(mapping) {
-  return CHAMPS_MODELE.filter((c) => mapping?.[c.cle])
-    .sort((a, b) => colonneVersIndex(mapping[a.cle]) - colonneVersIndex(mapping[b.cle]))
-    .map((c) => c.label);
+/** Champs mappés d'un modèle personnalisé, triés dans leur ordre réel dans le fichier. */
+export function champsModelePersonnalise(mapping) {
+  return CHAMPS_MODELE.filter((c) => mapping?.[c.cle]).sort(
+    (a, b) => colonneVersIndex(mapping[a.cle]) - colonneVersIndex(mapping[b.cle])
+  );
+}
+
+function sommeTva(tva) {
+  return (tva || []).reduce((somme, t) => somme + (Number(t.montant) || 0), 0);
+}
+
+/** Valeur affichable d'une dépense pour la colonne `cle`, formatée comme dans un vrai export. */
+export function valeurColonne(depense, cle) {
+  switch (cle) {
+    case "date":
+      return formatDateFr(depense.date);
+    case "fournisseur":
+      return depense.fournisseur || "";
+    case "categorie":
+      return depense.categorie || "";
+    case "description":
+      return depense.description || "";
+    case "montant_ht":
+      return formatAmount(depense.montant_ht);
+    case "tva":
+      return formatAmount(sommeTva(depense.tva));
+    case "montant_ttc":
+      return formatAmount(depense.montant_ttc);
+    case "invites":
+      return depense.invites || "";
+    case "lien_justificatif":
+      return depense.justificatif_drive_url || "";
+    default:
+      return "";
+  }
 }

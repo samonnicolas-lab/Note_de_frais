@@ -2,8 +2,10 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import { currentMonth, monthLabel, shiftMonth } from "../utils/format";
-import { COLONNES_EXPORT_STANDARD, colonnesModelePersonnalise } from "../utils/exportColumns";
+import { CHAMPS_EXPORT_STANDARD, champsModelePersonnalise, valeurColonne } from "../utils/exportColumns";
 import Spinner from "../components/Spinner";
+
+const LIGNES_APERCU_MAX = 15;
 
 export default function Export() {
   const navigate = useNavigate();
@@ -12,6 +14,7 @@ export default function Export() {
   const [erreur, setErreur] = useState(null);
   const [resultat, setResultat] = useState(null);
   const [statutModele, setStatutModele] = useState(null); // { configure, config }
+  const [depenses, setDepenses] = useState(null); // null tant que non chargé
 
   useEffect(() => {
     let annule = false;
@@ -22,10 +25,24 @@ export default function Export() {
     return () => { annule = true; };
   }, []);
 
+  useEffect(() => {
+    let annule = false;
+    setDepenses(null);
+    api
+      .listerDepenses(month)
+      .then((data) => { if (!annule) setDepenses(data.depenses || []); })
+      .catch(() => { if (!annule) setDepenses([]); });
+    return () => { annule = true; };
+  }, [month]);
+
   const modeleConfigure = statutModele?.configure;
-  const colonnesApercu = modeleConfigure
-    ? colonnesModelePersonnalise(statutModele.config.mapping)
-    : COLONNES_EXPORT_STANDARD;
+  const champsApercu = modeleConfigure
+    ? champsModelePersonnalise(statutModele.config.mapping)
+    : CHAMPS_EXPORT_STANDARD;
+  const lignesApercu = (depenses || []).slice(0, LIGNES_APERCU_MAX);
+  const lignesRestantes = Math.max(0, (depenses || []).length - LIGNES_APERCU_MAX);
+
+  const allerAuModele = () => navigate("/modele-excel");
 
   const genererExport = async () => {
     setEnCours(true);
@@ -73,17 +90,58 @@ export default function Export() {
       </p>
 
       {statutModele && (
-        <button type="button" className="modele-apercu" onClick={() => navigate("/modele-excel")}>
+        <div
+          className="modele-apercu"
+          role="button"
+          tabIndex={0}
+          onClick={allerAuModele}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              allerAuModele();
+            }
+          }}
+        >
           <span className="text-muted text-small">
             {modeleConfigure ? "Modèle utilisé" : "Aucun modèle personnalisé"}
           </span>
           <strong>{modeleConfigure ? statutModele.config.fileName : "Export standard de l'application"}</strong>
-          <div className="modele-apercu-grille">
-            {colonnesApercu.map((col, i) => (
-              <span key={i} className="modele-apercu-cellule">{col}</span>
-            ))}
+
+          <div className="export-preview">
+            <table className="export-preview-table">
+              <thead>
+                <tr>
+                  {champsApercu.map((c) => <th key={c.cle}>{c.label}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {depenses === null && (
+                  <tr>
+                    <td className="export-preview-vide" colSpan={champsApercu.length}>Chargement de l'aperçu...</td>
+                  </tr>
+                )}
+                {depenses !== null && lignesApercu.length === 0 && (
+                  <tr>
+                    <td className="export-preview-vide" colSpan={champsApercu.length}>
+                      Aucune dépense pour {monthLabel(month)}
+                    </td>
+                  </tr>
+                )}
+                {lignesApercu.map((d) => (
+                  <tr key={d.id}>
+                    {champsApercu.map((c) => <td key={c.cle}>{valeurColonne(d, c.cle) || "—"}</td>)}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        </button>
+          {lignesRestantes > 0 && (
+            <span className="text-muted text-small">
+              + {lignesRestantes} autre{lignesRestantes > 1 ? "s" : ""} ligne{lignesRestantes > 1 ? "s" : ""} non affichée{lignesRestantes > 1 ? "s" : ""}
+            </span>
+          )}
+          <span className="text-muted text-small">Cliquez pour changer le modèle d'export</span>
+        </div>
       )}
 
       <button type="button" className="btn btn-primary btn-block" onClick={genererExport} disabled={enCours}>
