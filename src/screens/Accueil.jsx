@@ -3,7 +3,27 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import Spinner from "../components/Spinner";
 import ConfirmDialog from "../components/ConfirmDialog";
-import { currentMonth, shiftMonth, monthLabel, formatAmount, formatDateFr } from "../utils/format";
+import {
+  currentMonth,
+  shiftMonth,
+  monthLabel,
+  formatAmount,
+  formatDateFr,
+  maxCaracteresDescription,
+  tronquerTexte,
+} from "../utils/format";
+import { useLargeurFenetre } from "../hooks/useLargeurFenetre";
+
+const CLE_AFFICHER_DESCRIPTIONS = "notes-de-frais:afficher-descriptions";
+
+function chargerPreferenceDescriptions() {
+  try {
+    const valeur = localStorage.getItem(CLE_AFFICHER_DESCRIPTIONS);
+    return valeur === null ? true : valeur === "1";
+  } catch {
+    return true;
+  }
+}
 
 export default function Accueil() {
   const navigate = useNavigate();
@@ -20,6 +40,19 @@ export default function Accueil() {
   const [confirmationOuverte, setConfirmationOuverte] = useState(false);
   const [suppressionEnCours, setSuppressionEnCours] = useState(false);
   const [deverrouillageEnCours, setDeverrouillageEnCours] = useState(false);
+
+  const [afficherDescriptions, setAfficherDescriptions] = useState(chargerPreferenceDescriptions);
+  const largeurEcran = useLargeurFenetre();
+  const maxCaracteres = maxCaracteresDescription(largeurEcran);
+
+  const onChangerAfficherDescriptions = (valeur) => {
+    setAfficherDescriptions(valeur);
+    try {
+      localStorage.setItem(CLE_AFFICHER_DESCRIPTIONS, valeur ? "1" : "0");
+    } catch {
+      // Préférence non persistée (stockage indisponible) : sans conséquence, elle repart à sa valeur par défaut.
+    }
+  };
 
   const charger = useCallback(async (m) => {
     setLoading(true);
@@ -136,6 +169,16 @@ export default function Accueil() {
             <strong className="total-amount">{formatAmount(data?.total_ttc || 0)}</strong>
           </div>
 
+          <label className="select-all-row">
+            <input
+              type="checkbox"
+              className="expense-checkbox"
+              checked={afficherDescriptions}
+              onChange={(e) => onChangerAfficherDescriptions(e.target.checked)}
+            />
+            <span className="text-muted text-small">Afficher les descriptions</span>
+          </label>
+
           {sorted.length === 0 ? (
             <div className="empty-state">
               <p>Aucune dépense enregistrée pour ce mois.</p>
@@ -176,6 +219,11 @@ export default function Accueil() {
                       <span className="badge">{d.categorie}</span>
                       {d.statut === "exportee" && <span className="badge badge-locked">🔒 Exportée</span>}
                     </div>
+                    {afficherDescriptions && d.description && (
+                      <div className="expense-item-description">
+                        {tronquerTexte(d.description, maxCaracteres)}
+                      </div>
+                    )}
                     <div className="expense-item-sub">
                       <span className="text-muted">{formatDateFr(d.date)}</span>
                       {d.justificatif_drive_url && (

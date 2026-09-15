@@ -540,6 +540,12 @@ a {
   font-size: 0.85rem;
 }
 
+.expense-item-description {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin: 2px 0;
+}
+
 .expense-amount {
   align-self: center;
   font-size: 1.05rem;

@@ -65,3 +65,18 @@ export function formatDateFr(dateStr) {
   const [y, m, d] = dateStr.split("-");
   return `${d}/${m}/${y}`;
 }
+
+// Nombre de caractères de description affichés selon la largeur d'écran :
+// le conteneur de l'app est lui-même plafonné à 640px (cf. .app-content),
+// inutile de laisser grandir au-delà sur un très grand écran.
+export function maxCaracteresDescription(largeurEcran) {
+  if (largeurEcran < 360) return 30;
+  if (largeurEcran < 480) return 45;
+  if (largeurEcran < 640) return 65;
+  return 90;
+}
+
+export function tronquerTexte(texte, max) {
+  if (!texte || texte.length <= max) return texte;
+  return `${texte.slice(0, max).trimEnd()} [...]`;
+}
