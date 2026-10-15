@@ -11,8 +11,8 @@ After=network.target
 [Service]
 Type=simple
 User=notesdefrais
-WorkingDirectory=/opt/notes-de-frais
-EnvironmentFile=/opt/notes-de-frais/.env
+WorkingDirectory=/notes-de-frais
+EnvironmentFile=/notes-de-frais/.env
 Environment=PORT=3001
 ExecStart=/usr/bin/node server/index.js
 Restart=on-failure
