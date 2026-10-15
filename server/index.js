@@ -34,9 +34,19 @@ function nodeRequestToFetchRequest(req, bodyBuffer) {
 }
 
 async function fetchResponseToNodeResponse(fetchResponse, res) {
-  const headers = {};
-  for (const [key, value] of fetchResponse.headers.entries()) headers[key] = value;
-  res.writeHead(fetchResponse.status, headers);
+  // Attention : un Headers peut contenir PLUSIEURS en-têtes "set-cookie" (ex. le
+  // callback OAuth pose à la fois le cookie de session et l'effacement du cookie
+  // d'état temporaire). Les recopier dans un objet JS classique ({ [key]: value })
+  // écrase silencieusement les doublons — un des deux Set-Cookie disparaît. On
+  // utilise donc getSetCookie() pour les récupérer tous, et res.setHeader() avec
+  // un tableau pour que Node les émette chacun sur leur propre ligne.
+  for (const [key, value] of fetchResponse.headers.entries()) {
+    if (key.toLowerCase() === "set-cookie") continue;
+    res.setHeader(key, value);
+  }
+  const cookies = fetchResponse.headers.getSetCookie?.() ?? [];
+  if (cookies.length > 0) res.setHeader("Set-Cookie", cookies);
+  res.writeHead(fetchResponse.status);
   const buffer = Buffer.from(await fetchResponse.arrayBuffer());
   res.end(buffer);
 }
