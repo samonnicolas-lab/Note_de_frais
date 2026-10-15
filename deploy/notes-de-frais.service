@@ -1,0 +1,28 @@
+# Service systemd pour le process API Node (server/index.js), à installer
+# sur le VPS sous /etc/systemd/system/notes-de-frais.service.
+#
+# Adapter User/WorkingDirectory/EnvironmentFile au chemin réel de déploiement
+# sur le VPS avant de l'installer (voir les commandes fournies séparément).
+
+[Unit]
+Description=Notes de frais - API Node
+After=network.target
+
+[Service]
+Type=simple
+User=notesdefrais
+WorkingDirectory=/opt/notes-de-frais
+EnvironmentFile=/opt/notes-de-frais/.env
+Environment=PORT=3001
+ExecStart=/usr/bin/node server/index.js
+Restart=on-failure
+RestartSec=5
+
+# Isolation raisonnable par défaut, sans gêner l'accès réseau sortant
+# nécessaire (Google, Anthropic, Supabase) ni l'écriture dans /tmp (fichiers
+# temporaires du pipeline OCR).
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

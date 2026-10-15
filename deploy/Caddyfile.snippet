@@ -1,0 +1,33 @@
+# Bloc à ajouter au Caddyfile existant du VPS (celui qui sert déjà
+# "suivi jours travaillés") — remplacer <SOUS-DOMAINE> par le nom choisi.
+# Caddy obtient et renouvelle seul le certificat Let's Encrypt pour ce
+# domaine dès qu'il pointe vers le VPS (DNS à jour requis).
+
+<SOUS-DOMAINE> {
+	# Fichiers statiques du build Vite (dist/), générés par `npm run build`.
+	root * /opt/notes-de-frais/dist
+	encode gzip
+
+	# API : proxy vers le process Node (server/index.js, cf. notes-de-frais.service).
+	handle /api/* {
+		reverse_proxy localhost:3001
+	}
+
+	# Fallback SPA : toute route non-API qui ne correspond à aucun fichier
+	# statique sert index.html (React Router prend le relais) — équivalent
+	# du [[redirects]] from="/*" to="/index.html" de netlify.toml.
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		X-Frame-Options "DENY"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	# Cache long pour les assets hashés par Vite (dist/assets/*), comme sur Netlify.
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=31536000, immutable"
+}
