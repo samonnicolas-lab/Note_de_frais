@@ -31,3 +31,12 @@
 	@assets path /assets/*
 	header @assets Cache-Control "public, max-age=31536000, immutable"
 }
+
+# Un enregistrement DNS pour la version sans "www" pointe déjà vers ce VPS
+# (utilisé par une autre appli). Sans bloc dédié ici, Caddy n'obtient aucun
+# certificat pour cet hôte : un client qui tape/visite cette variante (ex.
+# Safari iOS, qui masque "www." dans la barre d'adresse) obtient une erreur
+# TLS pure et simple. On redirige donc explicitement vers la version "www.".
+note-de-frais.carlezia.fr {
+	redir https://www.note-de-frais.carlezia.fr{uri} permanent
+}
