@@ -123,6 +123,12 @@ export default function Export() {
       {resultat && (
         <div className="alert alert-success">
           <p>Export généré : {resultat.nombre_depenses} dépense(s).</p>
+          {resultat.nombre_deja_exportees > 0 && (
+            <p className="text-muted text-small">
+              {resultat.nombre_deja_exportees} dépense(s) déjà exportée(s) précédemment ce mois-ci n'ont pas été
+              réincluses.
+            </p>
+          )}
           <a href={resultat.fichier.url} target="_blank" rel="noreferrer" className="link-small">
             Ouvrir {resultat.fichier.nom} sur Drive
           </a>
