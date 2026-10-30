@@ -25,6 +25,7 @@ export function buildDepense({
   tva,
   justificatif_drive_id,
   justificatif_drive_url,
+  justificatif_nom_fichier,
   justificatif_hash,
 }) {
   return {
@@ -39,6 +40,10 @@ export function buildDepense({
     tva: tva || [],
     justificatif_drive_id: justificatif_drive_id || null,
     justificatif_drive_url: justificatif_drive_url || null,
+    // Nom du fichier déposé (avec son extension) : distinct du lien Drive
+    // ci-dessus, utile pour un modèle Excel qui veut lister "facture.pdf" plutôt
+    // que l'URL complète (ex. colonne "Pièce jointe" à côté du lien cliquable).
+    justificatif_nom_fichier: justificatif_nom_fichier || null,
     justificatif_hash: justificatif_hash || null,
     cree_le: new Date().toISOString(),
     modifie_le: null,

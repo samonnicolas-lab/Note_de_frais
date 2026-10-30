@@ -96,6 +96,7 @@ export async function generateFromTemplate(templateBuffer, mapping, ligneEntete,
         hyperlink: d.justificatif_drive_url,
       };
     }
+    if (mapping.nom_justificatif) row.getCell(mapping.nom_justificatif).value = d.justificatif_nom_fichier || "";
   });
 
   // Le modèle ne contient pas nécessairement de ligne de total : on en ajoute

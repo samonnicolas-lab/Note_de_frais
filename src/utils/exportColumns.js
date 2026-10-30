@@ -11,4 +11,5 @@ export const CHAMPS_MODELE = [
   { cle: "montant_ttc", label: "Montant TTC" },
   { cle: "invites", label: "Personnes invitées" },
   { cle: "lien_justificatif", label: "Lien justificatif Drive" },
+  { cle: "nom_justificatif", label: "Nom du justificatif" },
 ];

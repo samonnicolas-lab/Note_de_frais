@@ -21,6 +21,7 @@ export function depensesExemple(month) {
       tva: [{ taux: 10, montant: 3.75 }],
       invites: "",
       justificatif_drive_url: "",
+      justificatif_nom_fichier: "billet-sncf-connect.pdf",
     },
     {
       date: dateDuMois(month, 12),
@@ -32,6 +33,7 @@ export function depensesExemple(month) {
       tva: [{ taux: 20, montant: 13.33 }],
       invites: "M. Dupont (client)",
       justificatif_drive_url: "",
+      justificatif_nom_fichier: "recu-restaurant-le-central.jpg",
     },
     {
       date: dateDuMois(month, 24),
@@ -43,6 +45,7 @@ export function depensesExemple(month) {
       tva: [{ taux: 10, montant: 9.09 }],
       invites: "",
       justificatif_drive_url: "",
+      justificatif_nom_fichier: "facture-hotel-bellevue.pdf",
     },
   ];
 }

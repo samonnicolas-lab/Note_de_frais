@@ -69,7 +69,7 @@ export default async (request) => {
       }
     }
 
-    let justificatif = { id: null, webViewLink: null };
+    let justificatif = { id: null, webViewLink: null, nomFichier: null };
     if (buffer) {
       const { monthFolderId } = await ensureMonthFolder(drive, month);
       const safeName = (fileName || `justificatif-${depense.date}`).replace(/[/\\]/g, "_");
@@ -79,7 +79,7 @@ export default async (request) => {
         mimeType,
         buffer,
       });
-      justificatif = { id: uploaded.id, webViewLink: uploaded.webViewLink };
+      justificatif = { id: uploaded.id, webViewLink: uploaded.webViewLink, nomFichier: safeName };
     }
 
     const saved = await addDepense(drive, {
@@ -93,6 +93,7 @@ export default async (request) => {
       tva: Array.isArray(depense.tva) ? depense.tva : [],
       justificatif_drive_id: justificatif.id,
       justificatif_drive_url: justificatif.webViewLink,
+      justificatif_nom_fichier: justificatif.nomFichier,
       justificatif_hash: justificatifHash,
     });
 

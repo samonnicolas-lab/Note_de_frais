@@ -27,6 +27,7 @@ const MOTS_CLES = {
   tva: /tva/i,
   montant_ttc: /ttc|total/i,
   lien_justificatif: /justificatif|pi[èe]ce|lien|drive|url/i,
+  nom_justificatif: /nom\s*(du\s*)?(justificatif|fichier)/i,
   invites: /invit[ée]s?|convives?/i,
 };
 

@@ -14,6 +14,7 @@ const COLUMNS = [
   { header: "Montant TTC", width: 14 },
   { header: "Personnes invitées", width: 28 },
   { header: "Lien justificatif Drive", width: 40 },
+  { header: "Nom du justificatif", width: 28 },
 ];
 export const NB_COLONNES = COLUMNS.length;
 export const LIGNE_ENTETE = 5; // 1: titre, 2-3: identité/mois/IBAN, 4: espacement, 5: en-têtes
@@ -107,6 +108,7 @@ export async function generateFixedColumnsWorkbook(depenses, month, profil = {})
     if (d.justificatif_drive_url) {
       row.getCell(9).value = { text: d.justificatif_drive_url, hyperlink: d.justificatif_drive_url };
     }
+    row.getCell(10).value = d.justificatif_nom_fichier || "";
   });
 
   const derniereLigneDonnees = premiereLigneDonnees + sorted.length - 1;

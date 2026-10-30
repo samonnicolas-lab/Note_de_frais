@@ -80,6 +80,7 @@ export default async (request) => {
       // L'ancien justificatif reste archivé tel quel sur Drive (non supprimé automatiquement).
       patch.justificatif_drive_id = uploaded.id;
       patch.justificatif_drive_url = uploaded.webViewLink;
+      patch.justificatif_nom_fichier = safeName;
       patch.justificatif_hash = sha256Hex(buffer);
     }
 
