@@ -20,6 +20,10 @@ export default function Reglages() {
   const [erreurProfil, setErreurProfil] = useState(null);
   const [avertissementIban, setAvertissementIban] = useState(null);
 
+  const [recherchNomsEnCours, setRecherchNomsEnCours] = useState(false);
+  const [resultatRecherchNoms, setResultatRecherchNoms] = useState(null);
+  const [erreurRecherchNoms, setErreurRecherchNoms] = useState(null);
+
   useEffect(() => {
     let annule = false;
     api
@@ -39,6 +43,20 @@ export default function Reglages() {
       .finally(() => { if (!annule) setChargementProfil(false); });
     return () => { annule = true; };
   }, []);
+
+  const onRetrouverNomsJustificatifs = async () => {
+    setRecherchNomsEnCours(true);
+    setErreurRecherchNoms(null);
+    setResultatRecherchNoms(null);
+    try {
+      const data = await api.retrouverNomsJustificatifs();
+      setResultatRecherchNoms(data);
+    } catch (err) {
+      setErreurRecherchNoms(err.message || "La recherche a échoué.");
+    } finally {
+      setRecherchNomsEnCours(false);
+    }
+  };
 
   const onLogout = async () => {
     await logout();
@@ -93,6 +111,31 @@ export default function Reglages() {
       <button type="button" className="btn btn-secondary btn-block" onClick={() => navigate("/modele-excel")}>
         Modèle Excel d'export
       </button>
+
+      <div className="settings-card">
+        <span className="text-muted">Nom des justificatifs</span>
+        <p className="text-small text-muted">
+          Retrouve, pour les dépenses enregistrées avant l'ajout de cette information, le nom du
+          fichier justificatif déjà présent sur votre Drive — sans avoir besoin de re-scanner quoi
+          que ce soit.
+        </p>
+        <button
+          type="button"
+          className="btn btn-secondary btn-block"
+          onClick={onRetrouverNomsJustificatifs}
+          disabled={recherchNomsEnCours}
+        >
+          {recherchNomsEnCours ? <Spinner label="Recherche en cours..." /> : "Retrouver les noms manquants"}
+        </button>
+        {erreurRecherchNoms && <div className="alert alert-error">{erreurRecherchNoms}</div>}
+        {resultatRecherchNoms && (
+          <div className="alert alert-success">
+            {resultatRecherchNoms.corrigees} dépense(s) complétée(s).
+            {resultatRecherchNoms.echouees > 0 &&
+              ` ${resultatRecherchNoms.echouees} fichier(s) introuvable(s) sur Drive (déplacé ou supprimé).`}
+          </div>
+        )}
+      </div>
 
       <div className="settings-card">
         <span className="text-muted">Informations personnelles</span>

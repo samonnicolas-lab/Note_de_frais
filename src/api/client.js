@@ -88,6 +88,8 @@ export const api = {
   usageMensuel: (month) =>
     request(`/usage-mensuel${month ? `?month=${encodeURIComponent(month)}` : ""}`),
 
+  retrouverNomsJustificatifs: () => request("/retrouver-noms-justificatifs", { method: "POST" }),
+
   analyserModeleExcel: (fileBase64) =>
     request("/analyser-modele-excel", {
       method: "POST",
