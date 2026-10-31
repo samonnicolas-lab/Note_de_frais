@@ -13,6 +13,7 @@ const CHAMPS_VALIDES = [
   "montant_ttc",
   "invites",
   "lien_justificatif",
+  "nom_justificatif",
 ];
 const CHAMPS_CELLULES_VALIDES = ["nom", "fonction", "mois", "iban"];
 const REFERENCE_CELLULE = /^[A-Za-z]{1,3}\d+$/;
